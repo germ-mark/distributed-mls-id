@@ -5,13 +5,13 @@
 Messaging Layer Security                                          M. Xue
 Internet-Draft                                        Germ Network, Inc.
 Intended status: Informational                            J. W. Lukefahr
-Expires: 9 September 2025                                        B. Hale
+Expires: 15 September 2025                                       B. Hale
                                             US Naval Postgraduate School
-                                                            8 March 2025
+                                                           14 March 2025
 
 
                             Distributed MLS
-                       draft-xue-multi-mls-latest
+                    draft-xue-distributed-mls-latest
 
 Abstract
 
@@ -30,9 +30,9 @@ About This Document
    This note is to be removed before publishing as an RFC.
 
    The latest revision of this draft can be found at https://germ-
-   mark.github.io/multi-mls-id/draft-xue-multi-mls.html.  Status
-   information for this document may be found at
-   https://datatracker.ietf.org/doc/draft-xue-multi-mls/.
+   mark.github.io/distributed-mls-id/draft-xue-distributed-mls.html.
+   Status information for this document may be found at
+   https://datatracker.ietf.org/doc/draft-xue-distributed-mls/.
 
    Discussion of this document takes place on the Messaging Layer
    Security Working Group mailing list (mailto:mls@ietf.org), which is
@@ -40,7 +40,7 @@ About This Document
    at https://www.ietf.org/mailman/listinfo/mls/.
 
    Source for this draft and an issue tracker can be found at
-   https://github.com/germ-mark/multi-mls-id.
+   https://github.com/germ-mark/distributed-mls-id.
 
 Status of This Memo
 
@@ -57,7 +57,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on 9 September 2025.
+   This Internet-Draft will expire on 15 September 2025.
 
 Copyright Notice
 
