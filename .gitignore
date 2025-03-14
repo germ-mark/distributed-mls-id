@@ -17,7 +17,7 @@
 /versioned/
 Gemfile.lock
 archive.json
-draft-xue-multi-mls.xml
+draft-xue-distributed-mls.xml
 package-lock.json
 report.xml
 !requirements.txt

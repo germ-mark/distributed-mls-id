@@ -2,16 +2,16 @@
 
 This is the working area for the individual Internet-Draft, "Distributed MLS".
 
-* [Editor's Copy](https://germ-mark.github.io/multi-mls-id/#go.draft-xue-multi-mls.html)
-* [Datatracker Page](https://datatracker.ietf.org/doc/draft-xue-multi-mls)
-* [Individual Draft](https://datatracker.ietf.org/doc/html/draft-xue-multi-mls)
-* [Compare Editor's Copy to Individual Draft](https://germ-mark.github.io/multi-mls-id/#go.draft-xue-multi-mls.diff)
+* [Editor's Copy](https://germ-mark.github.io/distributed-mls-id/#go.draft-xue-distributed-mls.html)
+* [Datatracker Page](https://datatracker.ietf.org/doc/draft-xue-distributed-mls)
+* [Individual Draft](https://datatracker.ietf.org/doc/html/draft-xue-distributed-mls)
+* [Compare Editor's Copy to Individual Draft](https://germ-mark.github.io/distributed-mls-id/#go.draft-xue-distributed-mls.diff)
 
 
 ## Contributing
 
 See the
-[guidelines for contributions](https://github.com/germ-mark/multi-mls-id/blob/main/CONTRIBUTING.md).
+[guidelines for contributions](https://github.com/germ-mark/distributed-mls-id/blob/main/CONTRIBUTING.md).
 
 Contributions can be made by creating pull requests.
 The GitHub interface supports creating pull requests using the Edit (✏) button.

@@ -3,7 +3,7 @@ title: "Distributed MLS"
 abbrev: "DMLS"
 category: info
 
-docname: draft-xue-multi-mls-latest
+docname: draft-xue-distributed-mls-latest
 submissiontype: IETF  # also: "independent", "editorial", "IAB", or "IRTF"
 number:
 date:
@@ -20,8 +20,8 @@ venue:
   type: "Working Group"
   mail: "mls@ietf.org"
   arch: "https://mailarchive.ietf.org/arch/browse/mls/"
-  github: "germ-mark/multi-mls-id"
-  latest: "https://germ-mark.github.io/multi-mls-id/draft-xue-multi-mls.html"
+  github: "germ-mark/distributed-mls-id"
+  latest: "https://germ-mark.github.io/distributed-mls-id/draft-xue-distributed-mls.html"
 
 author:
  -

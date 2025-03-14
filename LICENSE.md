@@ -1,4 +1,4 @@
 # License
 
 See the
-[guidelines for contributions](https://github.com/germ-mark/multi-mls-id/blob/main/CONTRIBUTING.md).
+[guidelines for contributions](https://github.com/germ-mark/distributed-mls-id/blob/main/CONTRIBUTING.md).
