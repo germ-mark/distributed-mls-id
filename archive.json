@@ -1,6 +1,6 @@
 {
   "magic": "E!vIA5L86J2I",
-  "timestamp": "2025-06-26T01:58:27.265788+00:00",
+  "timestamp": "2025-06-29T02:09:30.545419+00:00",
   "repo": "germ-mark/distributed-mls-id",
   "labels": [
     {
@@ -424,6 +424,32 @@
       "mergeCommit": {
         "oid": "8e0be2f3a716fb80dad225d1b816c01fe7a158cf"
       },
+      "comments": [],
+      "reviews": []
+    },
+    {
+      "number": 14,
+      "id": "PR_kwDONnQEW86cUuMb",
+      "title": "welcome process, a note on wire formats, formatting & re-organization",
+      "url": "https://github.com/germ-mark/distributed-mls-id/pull/14",
+      "state": "OPEN",
+      "author": "josephlukefahr",
+      "authorAssociation": "CONTRIBUTOR",
+      "assignees": [],
+      "labels": [],
+      "body": "Per our last meeting, I made additions and edits to address:\r\n* Wire formats\r\n* Building Welcome messages",
+      "createdAt": "2025-06-26T23:54:24Z",
+      "updatedAt": "2025-06-26T23:54:24Z",
+      "baseRepository": "germ-mark/distributed-mls-id",
+      "baseRefName": "main",
+      "baseRefOid": "8e0be2f3a716fb80dad225d1b816c01fe7a158cf",
+      "headRepository": "josephlukefahr/multi-mls-id",
+      "headRefName": "jwl/250626",
+      "headRefOid": "ad3adf20401456c09113349df820b28a48946b7a",
+      "closedAt": null,
+      "mergedAt": null,
+      "mergedBy": null,
+      "mergeCommit": null,
       "comments": [],
       "reviews": []
     }
