@@ -45,11 +45,11 @@ informative:
 
 The Messaging Layer Security (MLS) protocol enables a group of participants to
 negotiate a common cryptographic state for messaging, providing Forward
-Secrecy (FS) and Post-Compromise Security (PCS). Still, there are some use cases
+Secrecy (FS) and Post-Compromise Security (PCS). There are some use cases
 where message ordering challenges may make it difficult for a group of
 participants to agree on a common state or use cases where reaching eventual
 consistency is impractical for the application. This document describes
-Distributed-MLS (DMLS), a protocol for using MLS sessions to protect messages
+Distributed-MLS (DMLS), a configuration for using MLS sessions to protect messages
 among participants without negotiating a common group state.
 
 --- middle
@@ -61,7 +61,7 @@ may find it impractical to access a centralized Delivery Service (DS), or reach
 consensus on message sequencing to arrive at a consistent commit for each
 MLS epoch.
 
-DMLS is an MLS adaptation for facilitating group messaging in such use
+DMLS is a configuration of MLS for facilitating group messaging in such use
 cases by instantiating an MLS group per participant, such that each participant
 has a dedicated 'send' group within a communication superset of such groups.
 This allows each participant to locally and independently control the sequence
@@ -89,7 +89,8 @@ both PCS and FS without the need to reach global consensus on ordering of update
 
 ## Meeting MLS Delivery Service Requirements
 
-The MLS Architecture Guide specifies two requirements for an abstract Delivery Service related to message ordering.
+The MLS Architecture Guide specifies two requirements for an abstract Delivery
+Service related to message ordering.
 First, Proposal messages should all arrive before the Commit that references them.
 Second, members of an MLS group must agree on a single MLS Commit message that
 ends each epoch and begins the next one.
@@ -123,130 +124,77 @@ system that satisfies these requirements despite a decentralized DS.
 
 An MLS Send Group operates in the following constrained way:
   * The creator of the group, occupying leaf index 0, is the designated owner of the Send Group
-  * Other members only accept messages from the owner
-  * Members only accept messages as defined in Group Operations
-  * Each group owner updates their contribution to the group with a full or empty commit.
-    To incorporate fresh keying material inputs from
-    another member, the group owner creates an exporter key from the other member's Send Group and
-    imports that as a PSK Proposal.
+  * Other members only accept messages from the owner(creator)
 
-To facilitate binding Send Groups together, we define the following exported values:
-   * derived groupid: `MLS-Exporter("derivedGroupId", leafNodePublicSigningKey, Length)`
+## Send Group Mutation
 
-      This is a unique value for each participant derived from the group's current epoch
-   * exportPSK: `MLS-Exporter("exporter-psk", "psk_id", KDF.Nh)`
+Under this construction, only the send group creator can mutate the group.
+The creator can commit to their group to broadcast new keys and/or to incorporate
+new keys from other members of the universe.
 
-# Group Operations
+### (DMLS Update) Broadcast new keys for creator
+Alice can provide PCS for herself in her send group by authoring a (full or empty)
+commit that updates her own leaf node.
 
-Similar to MLS, DMLS provides a participant appliation programming interface (API) with the following functions:
+### (DMLS Commit) Incorporate new key material from others
+If Alice has received commits from other members, Alice can incorporate them as
+follows:
 
-## INIT
+If the latest (full or empty) commit Alice received from Bob in his send group is 
+for epoch k, and was not incorporated into Alice's send group, Alice can author a commit that
+*  replaces Bob's leaf node in Alice's send group with Bob's new leaf note in commit k
+*  imports a PSK from Bob's send group, epoch k with the following parameters
+   *  psk_id: k || (bob's send group id)
+      where k is a fixed width 8-byte encoding of the epoch in network byte order 
+   *  psk: MLS-Exporter("exporter-psk", "psk_id", KDF.Nh)
 
-Given a list of DMLS participants, initialize an DMLS context by (1) creating an MLS group, (2) adding all
-other participants (generating a set of Welcome messages and a GroupInfo message).
-It is the responsibility of a DMLS implementation to define the Universe of
-participants and the mechanism of generating the individual send groups.
-Two possible approaches are described below.
+An MLS commit can convey either a DMLS Update or Commit, or both. 
 
-### Over the wire definition
+# Universe Mechanics 
 
-For example, $U$ can be defined over the wire by inferring it from a newly created
-send group.
+A DMLS implementation constructs a DMLS context U by defining
+*  the Universe of members
+*  a random universe identifier
+*  a scheme for assigning a send group identifier for each member
+*  allowed cipher suites, and an export key length.
+and distributing initial keypackages for each members
 
-Assume Alice has keypackages for some other members $M_i$
+## Send Group Creation
+Within U, members create their send group by constructing a MLS group
+*  with the assigned send group identifier
+*  adding all other members
+*  distributing the resulting welcome message
 
-Alice can construct a DMLS group
-   * with a randomly generated groupId
-   * constructing a commit adding all other members $M_i$
+## Group Operations
 
-Alice can distribute the Welcome message with an Application Message that indicates
-   * this is a Send Group for Alice
-   * that defines a Universe $U$ as the members of this group
-   * with universe identifier equal to the groupId for Alice's send group
-   * and defines a common export key length
+Members of U encrypt and broadcast application messages in their send group.
+Members provide PCS against themselves by authoring and distributing DMLS updates.
+When they receive DMLS Updates from other group members,
+they can incorporate the new PCS key material with a DMLS commit.
 
-### Application-directed definition
+DMLS updates are ordered by the committer's epoch. Members may skip DMLS updates
+if they have received multiple, but must commit the latest pending DMLS update for each user
+before sending application messages of their own.
 
-$U$ can also be defined by the application layer, which provides each member:
-* keypackages for all other members in $U$
-* a random universe identifier for the DMLS group
-* common export key length
+# Properties
 
-Keypackages can be reusable, e.g., marked as last-resort.
-Keypackages can also be single-use if the application layer retrieves $N-1$ (where $|U|=N$) unique keypackages from each member.
+Under DMLS, members can successfully encrypt messages at any time without waiting for
+in-flight handshake messages from other members. A DMLS commit by Alice acknowledges
+to everyone else the newest DMLS update Alice has received from each member.
+Alice can delete her kth leaf node private key when all members have committed
+a newer leafNode from her.
 
-Alice can construct her view of a DMLS group:
-* by creating an MLS group with randomly generated groupId
-* and then constructing a Commit and Welcome message adding all other members in $U$
+Applications may handle offline members by dropping offline members. If Bob
+has been offline and not acknowleged Alice's kth update, Alice may choose
+to delete her kth key anyway, foreclosing the possiblity of receiving future
+messages to Bob. Alice can signal this in her next DMLS update or commit by
+removing Bob from her send group. This allows each member of the universe to
+independently excise offline members, and signal to everyone (including the removed member)
+that they are doing so.
 
-With this approach, an additional message is not required as common configuration items are provided by the application layer.
+Reintroducing them is outside the scope of this draft, and likely involves creating a new
+Universe of participants.
 
-## UPDATE
-
-A member Alice of $U$ can introduce new key material to the universe $U$ by authoring a full
-or empty commit in Alice's send group, which provides PCS with regard to the committer.
-
-## COMMIT
-
-When Bob receives Alice's DMLS update (as a full or empty commit in Alice's send group),
-Bob can incorporate PCS from Alice's commit by importing a PSK from Alice's send group.
-Precisely, Bob:
-   * Creates a PSK proposal in Bob's send group using the exportPskId
-      and exportPSK from the epoch of Alice's send group after Alice's DMLS update
-   * Bob generates a commit covering the PSK proposal (for each send group in which
-   he has observed a new DMLS update).
-
-The `psk_group_id` for this PSK is more specifically defined as follows:
-```
-psk_group_id = (opaque<8>) groupEpoch | groupId
-```
-where `epoch_bytes` is the byte-vector representation of the epoch in which the exporter was generated, in network byte order.
-Since epoch is of type `uint64`, this results in a fixed 8-byte vector.
-`groupId`, which is of type `opaque<V>`, is then appended to `epoch_bytes`.
-When a `exportPskId` is received as part of an incoming PSK proposal, it can then be processed as follows:
-```
-groupId = exportPskId[8..]
-epoch = (uint64) exportPskId[0..7]
-```
-
-Per {{!RFC9420}}, the `psk_nonce` must be a fresh random value of length `KDF.Nh` when the PSK proposal is generated.
-This ensures key separation between a PSK generated by, for example, (1) a PSK generated by Bob from Alice's group and (2) a PSK generated by Charlie from Alice's group.
-
-## PROTECT
-
-A member Bob protects a ciphertext message and encrypting it to $U$ by encrypting it
-as an application message in their send group. As in MLS, before encrypting an
-application message, Bob should incorporate any DMLS updates he has received.
-
-Each of the 3 MLS configurations of commit are possible:
-* If Bob has observed no updates but wishes to issue an update, they can author
-an empty commit.
-If bob has observed DMLS updates,
-* Bob can incorporate those updates without a DMLS of his own with
-a partial commit covering PSK proposals from each updated send group.
-* Alternatively, Bob can incorporate his own new keys by covering those PSK proposals
-with a full commit.
-
-
-## UNPROTECT
-
-On receipt of an MLS message, a member can look up the corresponding send group
-by the MLS groupId in the message metadata and attempt to decrypt it with that
-send group.
-
-
-# DMLS Requirements
-
-The application layer over MLS has the responsibility to define
-* The Universe $U$ of members of this DMLS group
-* Mapping groupIds to members of $U$
-* Additional common rules, such as accepted cipher suites
-
-(nothing inherently requires the send groups to agree on a cipher suite -
-each sender could choose their own as long as they agree on export key length
-)
-
-The DMLS layer should recommend a policy for issuing DMLS updates.
 
 # Wire Formats
 
