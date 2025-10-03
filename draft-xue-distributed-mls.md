@@ -146,12 +146,12 @@ Alice can author a commit that
 *  replaces Bob's leaf node in Alice's send group with Bob's new leaf note in commit k
 *  imports a PSK from Bob's send group, epoch k with the following parameters
    *  psk_id: k || (bob's send group id)
-      where k is a fixed width 8-byte encoding of the epoch in network byte order 
+      where k is a fixed width 8-byte encoding of the epoch in network byte order
    *  psk: MLS-Exporter("exporter-psk", "psk_id", KDF.Nh)
 
-An MLS commit can convey either a DMLS Update or Commit, or both. 
+An MLS commit can convey either a DMLS Update or Commit, or both.
 
-# Universe Mechanics 
+# Universe Mechanics
 
 A DMLS implementation constructs a DMLS context U by defining
 *  the Universe of members
