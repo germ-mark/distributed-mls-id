@@ -128,7 +128,7 @@ An MLS Send Group operates in the following constrained way:
 
 ## Send Group Mutation
 
-Under this construction, only the send group creator can mutate the group.
+Under this configuration, only the send group creator can mutate the group.
 The creator can commit to their group to broadcast new keys and/or to incorporate
 new keys from other members of the universe.
 
@@ -137,11 +137,12 @@ Alice can provide PCS for herself in her send group by authoring a (full or empt
 commit that updates her own leaf node.
 
 ### (DMLS Commit) Incorporate new key material from others
-If Alice has received commits from other members, Alice can incorporate them as
+If Alice has received DMLS updates from other members, Alice can incorporate them as
 follows:
 
-If the latest (full or empty) commit Alice received from Bob in his send group is 
-for epoch k, and was not incorporated into Alice's send group, Alice can author a commit that
+If the latest DMLS Update Alice received from Bob in his send group is a commit
+starting epoch k, and was not already incorporated into Alice's send group,
+Alice can author a commit that
 *  replaces Bob's leaf node in Alice's send group with Bob's new leaf note in commit k
 *  imports a PSK from Bob's send group, epoch k with the following parameters
    *  psk_id: k || (bob's send group id)
