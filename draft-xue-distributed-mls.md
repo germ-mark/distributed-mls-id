@@ -85,7 +85,7 @@ each member an MLS group to operate as a Send Group. The Send Group owner can ex
 secrets from other groups owned by the Universe and import the epoch randomness
 through use of Proposal messages into their own Send Group. This enables each Send Group
 to include entropy from other receive-only members of their Send Group, providing for
-both PCS and FS without the need to reach global consensus on ordering of updates.
+both PCS and FS without the need to reach global consensus on ordering of update applications.
 
 ## Meeting MLS Delivery Service Requirements
 
@@ -182,20 +182,38 @@ before sending application messages of their own.
 Under DMLS, members can successfully encrypt messages at any time without waiting for
 in-flight handshake messages from other members. A DMLS commit by Alice acknowledges
 to everyone else the newest DMLS update Alice has received from each member.
-Alice can delete her kth leaf node private key when all members have committed
+Alice can delete her k_th leaf node private key when all members have committed
 a newer leafNode from her.
 
-Applications may handle offline members by dropping offline members. If Bob
-has been offline and not acknowleged Alice's kth update, Alice may choose
-to delete her kth key anyway, foreclosing the possiblity of receiving future
+Applications may handle offline members by dropping them from the group. If Bob
+has been offline past an application's threshold and not acknowleged Alice's kth update,
+Alice may choose to delete her kth key anyway, foreclosing the possiblity of receiving future
 messages to Bob. Alice can signal this in her next DMLS update or commit by
 removing Bob from her send group. This allows each member of the universe to
 independently excise offline members, and signal to everyone (including the removed member)
 that they are doing so.
 
-Reintroducing them is outside the scope of this draft, and likely involves creating a new
-Universe of participants.
+Reintroducing them is outside the scope of this draft, and could be done by initiating a new
+universe.
 
+## Tolerance to dropped messages
+
+Analogously to MLS, where members must receive every commit message and apply them in order
+to be able to compute the group's most recent state, in DMLS each member must receive every commit
+from every other member. Recipients must apply commits from each send group in order, aided by
+MLS message metadata.
+
+The injection of PSK's across groups introduces an additional commit ordering dependency, in addition
+to the requirement that commits of the same group be applide in order.
+
+The format of the PSK ID helps members order the application of commits across send groups to succesfully
+import PSK's:
+   * Alice issues a DMLS update in the commit starting epoch k of her send group.
+   * Bob receives Alice's kth DMLS update, and incorporates it in the j_th commit of his send groups
+   * Charlie, on receipt of Bob's j_th commit, can process it and understand it depends on a PSKID that he can parse as k_th commit from Alice.
+
+The dependency order of commits forms a directed graph among pairs of (epoch, groupId) in a Universe.
+We can recursively prove this is an acyclic graph.
 
 # Wire Formats
 
