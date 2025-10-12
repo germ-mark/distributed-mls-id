@@ -49,7 +49,7 @@ Secrecy (FS) and Post-Compromise Security (PCS). Still, there are some use cases
 where message ordering challenges may make it difficult for a group of
 participants to agree on a common state or use cases where reaching eventual
 consistency is impractical for the application. This document describes
-Distributed-MLS (DMLS), a protocol for using MLS sessions to protect messages
+Distributed-MLS (DMLS), a composition protocol for using MLS sessions to protect messages
 among participants without negotiating a common group state.
 
 --- middle
@@ -61,13 +61,16 @@ may find it impractical to access a centralized Delivery Service (DS), or reach
 consensus on message sequencing to arrive at a consistent commit for each
 MLS epoch.
 
-DMLS is an MLS adaptation for facilitating group messaging in such use
-cases by instantiating an MLS group per participant, such that each participant
-has a dedicated 'send' group within a communication superset of such groups.
-This allows each participant to locally and independently control the sequence
-of update processing and encrypt messages using MLS accordingingly. This draft
-further addresses how to incorporate randomness from other participant's 'send'
-groups to ensure post-compromise security (PCS) is maintained.
+DMLS is an composition or 'super'-protocol for facilitating group messaging in
+such use cases that uses MLS as a 'sub' protocol. It instantiates an MLS session 
+per participant, such that each participant acts as the 'owner' of its own group. 
+These sub-groups also act as 'send' groups, in which the owner sends all of their 
+application messages and determines the ordering of proposals and commits. This 
+allows each participant to locally and independently control the sequence
+of update processing and encrypt messages using MLS accordingingly. DMLS then 
+comprises the communication superset of such send groups.  This draft further 
+addresses how to incorporate randomness from other participants' 'send'
+groups to ensure post-compromise security (PCS) is maintained across the superset.
 
 ## Terminology
 
