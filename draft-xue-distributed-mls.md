@@ -74,21 +74,22 @@ groups to ensure post-compromise security (PCS) is maintained across the superse
 
 ## Terminology
 
-Send Group: An MLS group where one designated member (the group 'owner') authors
+Send Group: An MLS session where one designated senber (the group 'owner') authors
 all messages and other members use the group only to receive from the designated sender.
 
-Universe: A superset of MLS participants comprised of the owners of all Send
-Groups.
+DiMembers: A superset of MLS participants, comprised of the owners of all Send
+Groups within the DMLS Session.
 
 ## Protocol Overview
 
-Within a universe U of distributed participants, we can resolve state conflict by
+Within a group U of distributed DiMember participants, we can resolve state conflict by
 assigning each member local state that only they control. In DMLS, we assign
-each member an MLS group to operate as a Send Group. The Send Group owner can export
-secrets from other groups owned by the Universe and import the epoch randomness
-through use of Proposal messages into their own Send Group. This enables each Send Group
-to include entropy from other receive-only members of their Send Group, providing for
-both PCS and FS without the need to reach global consensus on ordering of updates.
+to each member ownership of an MLS group that they then operate as a Send Group. 
+The Send Group owner can export secrets from other groups owned by DiMembers and import
+such secrets as added randomness into their own Send Group through use of epochal 
+Proposal messages. This enables each Send Group to include entropy from other 
+receive-only members of their Send Group, providing for both PCS and FS without the 
+need to reach global consensus on ordering of updates.
 
 ## Meeting MLS Delivery Service Requirements
 
