@@ -138,14 +138,14 @@ Thus DMLS comes with functional trade-offs.
 
 # Send Group Operation
 
-An MLS Send Group operates in the following constrained way:
+An MLS Send Group operates in the following way:
   * The creator of the group, occupying leaf index 0, is the designated owner of the Send Group
   * Other members only accept messages from the owner
   * Members only accept messages as defined in Group Operations
   * Each group owner updates their contribution to the group with a full or empty commit.
-    To incorporate fresh keying material inputs from
-    another member, the group owner creates an exporter key from the other member's Send Group and
-    imports that as a PSK Proposal.
+    To incorporate fresh keying material inputs from another member, the group owner
+    creates an exporter key from the other member's Send Group and imports the PSK into
+    its own Send Group using a PSK Proposal.
 
 To facilitate binding Send Groups together, we define the following exported values:
    * derived groupid: `MLS-Exporter("derivedGroupId", leafNodePublicSigningKey, Length)`
