@@ -93,35 +93,48 @@ need to reach global consensus on ordering of updates.
 
 ## Meeting MLS Delivery Service Requirements
 
-The MLS Architecture Guide specifies two requirements for an abstract Delivery Service related to message ordering.
-First, Proposal messages should all arrive before the Commit that references them.
-Second, members of an MLS group must agree on a single MLS Commit message that
-ends each epoch and begins the next one.
+The MLS Architecture Guide specifies two requirements for an abstract Delivery Service 
+related to message ordering. First, Proposal messages should all arrive before the Commit 
+that references them. Second, members of an MLS group must agree on a single MLS Commit 
+message that ends each epoch and begins the next one.
 
-An honest centralized DS, in the form of a message queuing server or content
-distribution network, can guarantee these requirements to be met.
-By controlling the order of messages delivered to MLS participants, for example,
-it can guarantee that Commit messages always follow their associated Proposal messages.
-By filtering Commit messages based on some pre-determined criteria, it can ensure
-that only a single Commit message per epoch is delivered to participants.
+An honest centralized DS, in the form of a message queuing server or content distribution 
+network, can guarantee these requirements to be met. By controlling the order of messages 
+delivered to MLS participants, for example, it can guarantee that Commit messages always 
+follow their associated Proposal messages. By filtering Commit messages based on some 
+pre-determined criteria, it can ensure that only a single Commit message per epoch is 
+delivered to participants.
 
 A decentralized DS, on the other hand, can take the form of a message queuing server
 without specialized logic for handling MLS messages, a mesh network, or, prehaps, simply
-a local area network. These DS instantiations cannot offer any such guarantees.
+a local area network. These DS instantiations cannot offer any such guarantees. 
 
 The MLS Architecture Guide highlights the risk of two MLS members generating different
 Commits in the same epoch and then sending them at the same time. The impact of this risk is
-inconsistency of MLS group state among members. This perhaps leads to inability of some
-authorized members to read other authorized members' messages, i.e., a loss of availability
-of the message-passing service provided by MLS. A decentralized DS offers no mitigation
+inconsistency or forking of MLS group state among members, which in turn risks authorized 
+members being unable to read each other's messages. A decentralized DS offers no mitigation
 strategy for this risk, so the members themselves must agree on strategies, or in our
-terminology, operating constraints. We could say that the full weight of the CAP theorem
-is thus levied directly on the MLS members in this case. However, use cases exist that
-benefit from, or even necessitate, MLS and its accompanying security guarantees for
-group message passing.
+terminology, operating constraints. We could say in such cases that the full weight of the 
+CAP theorem is therefor levied directly on the MLS members. However, use cases exist that
+benefit from, or even necessitate, MLS and its accompanying security guarantees for 
+distributed group communications.
 
 The DMLS operating constraints specified above allow honest members to form a distributed
-system that satisfies these requirements despite a decentralized DS.
+system that satisfies these requirements despite a decentralized DS. Moreover, instead of 
+mitigating or providing methods for resolving commit collisions, it effectively eliminates 
+any risk of them occuring. It also, consequently removes the risk of insider state 
+desyncronization attacks, as an inisder (a DiMember) can only control state in their own 
+Send Group. The Send Group methodology ensures that a single owner controls the Send 
+sequence in their own group, including both application messages and commits. As a potential 
+functional benefit in some use cases, DMLS further enables flexibility in receive-only modes, 
+namely that any DiMember can continue to receive messages sent from other groups, even if not 
+sending information themselves. 
+
+Downsides of the DMLS design that may make it not suitable for all settings include increased 
+overhead, namely due to the fact that within any Send Group, intermediate nodes along the parent 
+path of any non-owner remain blank. While the owner path updates when it commits and other leaf 
+nodes can be updated as explained later, the parent path of the other leaf nodes is not filled in. 
+Thus DMLS comes with functional trade-offs.
 
 # Send Group Operation
 
