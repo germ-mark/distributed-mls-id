@@ -246,17 +246,17 @@ Proposals for their own respective Send Groups.
 A member Bob protects a ciphertext message and encrypting it to the DiMembers in $U$ 
 by encrypting it as an application message in his Send Group, as in MLS. As in MLS, 
 before encrypting an application message, Bob SHOULD incorporate any DMLS updates 
-of his own or PSK proposals corresponding to updates in other DiMember Send Groups 
+of Bob's own or PSK proposals corresponding to updates in other DiMember Send Groups 
 that he has observed. 
 
 Each of the 3 MLS configurations of Commit are possible:
-* If Bob has observed no updates but wishes to issue an update, they can author
-an empty Commit.
-If bob has observed DMLS updates,
-* Bob can incorporate those updates without a DMLS of his own with
-a partial Commit covering PSK Proposals from each updated send group.
-* Alternatively, Bob can incorporate his own new keys by covering those PSK Proposals
-with a full Commit.
+* If Bob has observed no updates but wishes to issue an update, Bob can author
+  an empty Commit.
+If Bob has observed DMLS updates in others' Send Groups,
+* Bob can incorporate those updates without an update of his own with a partial
+  Commit covering PSK Proposals he derives from each of the other updated Send Groups.
+* Alternatively, Bob can incorporate those updates as well as an update of Bob's own
+  by covering those PSK Proposals with a full Commit.
 
 
 ## UNPROTECT
