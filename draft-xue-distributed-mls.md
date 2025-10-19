@@ -300,16 +300,27 @@ configuration or operational parameters.
 # Security Considerations
 
 DMLS inherits and matches MLS in most security considerations with one notable 
-change to PCS nuances. In MLS each group member can largely control when their 
-updates will be introduced to the group state, with
-deconfliction only down to the DS. In contrast, in DMLS the Send Group owner controls when key update
-material is included from each member; namely, every member updates in their own Send Group and fresh
-keying material is then imported to other Send Groups through use of the exporter key and PSK Proposal
-option, with timing controlled by the respective Send Group owners. This means that while the PCS
-healing frequency of a given member in MLS is under their own control, in DMLS the PCS healing frequency
-and timeliness of PSK import is controlled by the Send Group owner. However, the Send Group owner is also
-the only member sending data in the Send Group. This means that there is a natural incentive to update
-frequently and in a timely manner.
+change to security control nuances. In MLS each group member can largely control 
+when their updates will be introduced to the group state, with deconfliction only 
+down to the DS. In contrast, in DMLS the Send Group owner controls when key update
+material is included from each member; namely, every member updates in their own 
+Send Group and fresh keying material is then imported to other Send Groups through 
+use of the exporter key and PSK Proposal option, with timing controlled by the 
+respective Send Group owners. This means that while the PCS healing frequency of a 
+given member in MLS is under their own control, in DMLS the PCS healing frequency
+and timeliness of PSK import is controlled by the Send Group owner. However, the 
+Send Group owner is also the only member sending data in the Send Group. This means 
+that there is a natural incentive to update frequently and in a timely manner, and 
+that PCS impacts on sending of data are not delayed from the point of original 
+update. 
+
+FS guarantees per Send Group follow similarly; the Send Group owner determines the 
+frequency of key roll-over. 
+
+Notably, since the Send Group owner determines what is introduced as a PSK from 
+other DMembers, it is not possible for an insider threat to disrupt the group state 
+and cause desynchronization of the group view. This is unlike in MLS, where all 
+contributing parties must behave honestly to avoid state disruption. 
 
 
 # IANA Considerations
