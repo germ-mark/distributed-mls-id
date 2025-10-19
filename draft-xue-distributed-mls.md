@@ -223,7 +223,7 @@ from Alice's Send Group. Precisely, Bob:
    * Creates a PSK Proposal in Bob's Send Group using the exportPskId
       and exportPSK from the epoch of Alice's Send Group after Alice's DMLS update
    * Bob generates a Commit covering the PSK Proposal
-   * If other DMembers have updated in their respective Send Groups, Bob may include
+   * If other DMembers have updated in their respective Send Groups, Bob MAY include
       more than one PSK Proposal under the Commit in his own Send Group, corresponding
      to those respective updates. 
 
@@ -241,7 +241,7 @@ groupId = exportPskId[8..]
 epoch = (uint64) exportPskId[0..7]
 ```
 
-Per {{!RFC9420}}, the `psk_nonce` must be a fresh random value of length `KDF.Nh` when 
+Per {{!RFC9420}}, the `psk_nonce` MUST be a fresh random value of length `KDF.Nh` when 
 the PSK Proposal is generated. This ensures key separation between the PSKs generated,  
 for example, by Bob and Charlie as DMembers when extracting PSKs from Alice's Send Group 
 for creating Proposals within their own respective Send Groups.
@@ -261,7 +261,7 @@ receiving messages in Bob's Send Group receive the Commit, they MUST also update
 tree representations to reflect Alice's leaf node corresponding to the `groupID` and 
 `epoch`.
 
-Alice's leafe node placement in Bob's own MLS tree may be different than in Alice' MLS 
+Alice's leaf node placement in Bob's own MLS tree MAY be different than in Alice' MLS 
 tree, and consequently the Alice's update within her own Send Group does not correspond 
 to intermediate node updates for Alice's path in Bob's Send Group. 
 Only the leaf node is updated. 
@@ -305,12 +305,12 @@ protection requirements, as long as they agree on export key length. It is
 advisable that the application set minimum requirements for all Send Groups 
 within the DGroup.)
 
-The DMLS application should recommend a policy for issuing DMLS updates.
+The DMLS application SHOULD recommend a policy for issuing DMLS updates.
 
 # Wire Formats
 
 DMLS uses standard wire formats as defined in {{!RFC9420}}.  An application using 
-DMLS should define formats for any additional messages containing common 
+DMLS SHOULD define formats for any additional messages containing common 
 configuration or operational parameters.
 
 # Conventions and Definitions
