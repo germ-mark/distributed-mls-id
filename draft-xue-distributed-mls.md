@@ -58,14 +58,14 @@ among participants without negotiating a common group state.
 
 Participants operating in peer-to-peer or partitioned network topologies
 may find it impractical to access a centralized Delivery Service (DS), or reach
-consensus on message sequencing to arrive at a consistent commit for each
+consensus on message sequencing to arrive at a consistent Commit for each
 MLS epoch.
 
 DMLS is an composition or 'super'-protocol for facilitating group messaging in
 such use cases that uses MLS as a 'sub' protocol. It instantiates an MLS session 
 per participant, such that each participant acts as the 'owner' of its own group. 
 These sub-groups also act as 'send' groups, in which the owner sends all of their 
-application messages and determines the ordering of proposals and commits. This 
+application messages and determines the ordering of Proposals and Commits. This 
 allows each participant to locally and independently control the sequence
 of update processing and encrypt messages using MLS accordingingly. DMLS then 
 comprises the communication superset of such send groups.  This draft further 
@@ -75,74 +75,77 @@ groups to ensure post-compromise security (PCS) is maintained across the superse
 ## Terminology
 
 Send Group: An MLS session where one designated senber (the group 'owner') authors
-all messages and other members use the group only to receive from the designated sender.
+all messages and other members use the group only to receive from the designated 
+sender.
 
 DiMembers: A superset of MLS participants, $U$, comprised of the owners of all Send
 Groups within the DMLS Session.
 
 ## Protocol Overview
 
-Within a group U of distributed DiMember participants, we can resolve state conflict by
-assigning each member local state that only they control. In DMLS, we assign
+Within a group U of distributed DiMember participants, we can resolve state conflict 
+by assigning each member local state that only they control. In DMLS, we assign
 to each member ownership of an MLS group that they then operate as a Send Group. 
-The Send Group owner can export secrets from other groups owned by DiMembers and import
-such secrets as added randomness into their own Send Group through use of epochal 
-Proposal messages. This enables each Send Group to include entropy from other 
-receive-only members of their Send Group, providing for both PCS and FS without the 
-need to reach global consensus on ordering of updates.
+The Send Group owner can export secrets from other groups owned by DiMembers and 
+import such secrets as added randomness into their own Send Group through use of 
+epochal Proposal messages. This enables each Send Group to include entropy from 
+other receive-only members of their Send Group, providing for both PCS and FS 
+without the need to reach global consensus on ordering of updates.
 
 ## Meeting MLS Delivery Service Requirements
 
-The MLS Architecture Guide specifies two requirements for an abstract Delivery Service 
-related to message ordering. First, Proposal messages should all arrive before the Commit 
-that references them. Second, members of an MLS group must agree on a single MLS Commit 
-message that ends each epoch and begins the next one.
+The MLS Architecture Guide specifies two requirements for an abstract Delivery 
+Service related to message ordering. First, Proposal messages should all arrive 
+before the Commit that references them. Second, members of an MLS group must agree 
+on a single MLS Commit message that ends each epoch and begins the next one.
 
-An honest centralized DS, in the form of a message queuing server or content distribution 
-network, can guarantee these requirements to be met. By controlling the order of messages 
-delivered to MLS participants, for example, it can guarantee that Commit messages always 
-follow their associated Proposal messages. By filtering Commit messages based on some 
-pre-determined criteria, it can ensure that only a single Commit message per epoch is 
-delivered to participants.
+An honest centralized DS, in the form of a message queuing server or content 
+distribution network, can guarantee these requirements to be met. By controlling 
+the order of messages delivered to MLS participants, for example, it can guarantee 
+that Commit messages always follow their associated Proposal messages. By filtering 
+Commit messages based on some pre-determined criteria, it can ensure that only a 
+single Commit message per epoch is delivered to participants.
 
-A decentralized DS, on the other hand, can take the form of a message queuing server
-without specialized logic for handling MLS messages, a mesh network, or, prehaps, simply
-a local area network. These DS instantiations cannot offer any such guarantees. 
+A decentralized DS, on the other hand, can take the form of a message queuing 
+server without specialized logic for handling MLS messages, a mesh network, or, 
+perhaps, simply a local area network. These DS instantiations cannot offer any such 
+guarantees. 
 
-The MLS Architecture Guide highlights the risk of two MLS members generating different
-Commits in the same epoch and then sending them at the same time. The impact of this risk is
-inconsistency or forking of MLS group state among members, which in turn risks authorized 
-members being unable to read each other's messages. A decentralized DS offers no mitigation
-strategy for this risk, so the members themselves must agree on strategies, or in our
-terminology, operating constraints. We could say in such cases that the full weight of the 
-CAP theorem is therefor levied directly on the MLS members. However, use cases exist that
-benefit from, or even necessitate, MLS and its accompanying security guarantees for 
-distributed group communications.
+The MLS Architecture Guide highlights the risk of two MLS members generating 
+different Commits in the same epoch and then sending them at the same time. The impact 
+of this risk is inconsistency or forking of MLS group state among members, which in 
+turn risks authorized members being unable to read each other's messages. A 
+decentralized DS offers no mitigation strategy for this risk, so the members themselves 
+must agree on strategies, or in our terminology, operating constraints. We could say in 
+such cases that the full weight of the CAP theorem is therefor levied directly on the 
+MLS members. However, use cases exist that benefit from, or even necessitate, MLS and 
+its accompanying security guarantees for distributed group communications.
 
-The DMLS operating constraints specified above allow honest members to form a distributed
-system that satisfies these requirements despite a decentralized DS. Moreover, instead of 
-mitigating or providing methods for resolving commit collisions, it effectively eliminates 
-any risk of them occuring. It also, consequently removes the risk of insider state 
-desyncronization attacks, as an inisder (a DiMember) can only control state in their own 
-Send Group. The Send Group methodology ensures that a single owner controls the Send 
-sequence in their own group, including both application messages and commits. As a potential 
-functional benefit in some use cases, DMLS further enables flexibility in receive-only modes, 
-namely that any DiMember can continue to receive messages sent from other groups, even if not 
-sending information themselves. 
+The DMLS operating constraints specified above allow honest members to form a 
+distributed system that satisfies these requirements despite a decentralized DS. 
+Moreover, instead of mitigating or providing methods for resolving Commit collisions, 
+it effectively eliminates any risk of them occuring. It also, consequently removes the 
+risk of insider state desyncronization attacks, as an inisder (a DiMember) can only 
+control state in their own Send Group. The Send Group methodology ensures that a 
+single owner controls the Send sequence in their own group, including both application 
+messages and Commits. As a potential functional benefit in some use cases, DMLS further 
+enables flexibility in receive-only modes, namely that any DiMember can continue to 
+receive messages sent from other groups, even if not sending information themselves. 
 
-Downsides of the DMLS design that may make it not suitable for all settings include increased 
-overhead, namely due to the fact that within any Send Group, intermediate nodes along the parent 
-path of any non-owner remain blank. While the owner path updates when it commits and other leaf 
-nodes can be updated as explained later, the parent path of the other leaf nodes is not filled in. 
-Thus DMLS comes with functional trade-offs.
+Downsides of the DMLS design that may make it not suitable for all settings include 
+increased overhead, namely due to the fact that within any Send Group, intermediate 
+nodes along the parent path of any non-owner remain blank. While the owner path updates 
+when it Commits and other leaf nodes can be updated as explained later, the parent path 
+of the other leaf nodes is not filled in. Thus DMLS comes with functional trade-offs.
 
 # Send Group Operation
 
 An MLS Send Group operates in the following way:
-  * The creator of the group, occupying leaf index 0, is the designated owner of the Send Group
+  * The creator of the group, occupying leaf index 0, is the designated owner of the Send
+    Group
   * Other members only accept messages from the owner
   * Members only accept messages as defined in Group Operations
-  * Each group owner updates their contribution to the group with a full or empty commit.
+  * Each group owner updates their contribution to the group with a full or empty Commit.
     To incorporate fresh keying material inputs from another member, the group owner
     creates an exporter key from the other member's Send Group and imports the PSK into
     its own Send Group using a PSK Proposal.
@@ -175,7 +178,7 @@ Assume Alice has keypackages for some other DiMembers $M_i$
 
 Alice can construct a DMLS group
    * with a randomly generated groupId
-   * constructing a commit adding all other DiMembers $M_i$
+   * constructing a Commit adding all other DiMembers $M_i$
 
 Alice can distribute the Welcome message with an Application Message that indicates
    * this is a Send Group for Alice
@@ -204,19 +207,19 @@ items are provided by the application layer.
 ## UPDATE
 
 A member Alice of $U$ can introduce new key material to the DiMember set $U$ by 
-authoring a full or empty commit in Alice's own Send Group, which provides PCS with 
+authoring a full or empty Commit in Alice's own Send Group, which provides PCS with 
 regard to the committer.
 
 ## COMMIT
 
-When Bob receives Alice's DMLS update (as a full or empty commit in Alice's Send Group),
-Bob can incorporate PCS from Alice's commit into his own Send Group by importing a PSK 
+When Bob receives Alice's DMLS update (as a full or empty Commit in Alice's Send Group),
+Bob can incorporate PCS from Alice's Commit into his own Send Group by importing a PSK 
 from Alice's Send Group. Precisely, Bob:
-   * Creates a PSK proposal in Bob's Send Group using the exportPskId
+   * Creates a PSK Proposal in Bob's Send Group using the exportPskId
       and exportPSK from the epoch of Alice's Send Group after Alice's DMLS update
-   * Bob generates a commit covering the PSK proposal
+   * Bob generates a Commit covering the PSK Proposal
    * If other DiMembers have updated in their respective Send Groups, Bob may include
-      more than one PSK proposal under the commit in his own Send Group, corresponding
+      more than one PSK Proposal under the Commit in his own Send Group, corresponding
      to those respective updates. 
 
 The `psk_group_id` for this PSK is more specifically defined as follows:
@@ -225,18 +228,18 @@ psk_group_id = (opaque<8>) groupEpoch | groupId
 ```
 where `epoch_bytes` is the byte-vector representation of the epoch in which the exporter 
 was generated, in network byte order. Since epoch is of type `uint64`, this results in a 
-fixed 8-byte vector. `groupId`, which is of type `opaque<V>`, is then appended to `epoch_bytes`.
-When a `exportPskId` is received as part of an incoming PSK proposal, it can then be 
-processed as follows:
+fixed 8-byte vector. `groupId`, which is of type `opaque<V>`, is then appended to 
+`epoch_bytes`. When a `exportPskId` is received as part of an incoming PSK Proposal, it 
+can then be processed as follows:
 ```
 groupId = exportPskId[8..]
 epoch = (uint64) exportPskId[0..7]
 ```
 
 Per {{!RFC9420}}, the `psk_nonce` must be a fresh random value of length `KDF.Nh` when 
-the PSK proposal is generated. This ensures key separation between the PSKs generated,  
+the PSK Proposal is generated. This ensures key separation between the PSKs generated,  
 for example, by Bob and Charlie as DiMembers from Alice's Send Group when creating 
-proposals for their own respective Send Groups.
+Proposals for their own respective Send Groups.
 
 ## PROTECT
 
@@ -244,14 +247,14 @@ A member Bob protects a ciphertext message and encrypting it to $U$ by encryptin
 as an application message in their send group. As in MLS, before encrypting an
 application message, Bob should incorporate any DMLS updates he has received.
 
-Each of the 3 MLS configurations of commit are possible:
+Each of the 3 MLS configurations of Commit are possible:
 * If Bob has observed no updates but wishes to issue an update, they can author
-an empty commit.
+an empty Commit.
 If bob has observed DMLS updates,
 * Bob can incorporate those updates without a DMLS of his own with
-a partial commit covering PSK proposals from each updated send group.
-* Alternatively, Bob can incorporate his own new keys by covering those PSK proposals
-with a full commit.
+a partial Commit covering PSK Proposals from each updated send group.
+* Alternatively, Bob can incorporate his own new keys by covering those PSK Proposals
+with a full Commit.
 
 
 ## UNPROTECT
@@ -276,7 +279,9 @@ The DMLS layer should recommend a policy for issuing DMLS updates.
 
 # Wire Formats
 
-DMLS uses standard wire formats as defined in {{!RFC9420}}.  An application using DMLS should define formats for any additional messages containing common configuration or operational parameters.
+DMLS uses standard wire formats as defined in {{!RFC9420}}.  An application using 
+DMLS should define formats for any additional messages containing common 
+configuration or operational parameters.
 
 # Conventions and Definitions
 
@@ -285,8 +290,9 @@ DMLS uses standard wire formats as defined in {{!RFC9420}}.  An application usin
 
 # Security Considerations
 
-DMLS inherits and matches MLS in most security considerations with one notable change to PCS nuances. In
-MLS each group member can largely control when their updates will be introduced to the group state, with
+DMLS inherits and matches MLS in most security considerations with one notable 
+change to PCS nuances. In MLS each group member can largely control when their 
+updates will be introduced to the group state, with
 deconfliction only down to the DS. In contrast, in DMLS the Send Group owner controls when key update
 material is included from each member; namely, every member updates in their own Send Group and fresh
 keying material is then imported to other Send Groups through use of the exporter key and PSK Proposal
@@ -302,7 +308,10 @@ frequently and in a timely manner.
 This document has no IANA actions.
 
 # References
- CAPBR: # Brewer, E., "Towards robust distributed systems (abstract)", ACM, Proceedings of the nineteenth annual ACM symposium on Principles of distributed computing, DOI 10.1145/343477.343502, July 2000, <https://doi.org/10.1145/343477.343502>.
+ CAPBR: # Brewer, E., "Towards robust distributed systems (abstract)", ACM, 
+ Proceedings of the nineteenth annual ACM symposium on Principles of distributed 
+ computing, DOI 10.1145/343477.343502, July 2000, 
+ <https://doi.org/10.1145/343477.343502>.
 
 --- back
 
