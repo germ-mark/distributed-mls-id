@@ -246,6 +246,27 @@ the PSK Proposal is generated. This ensures key separation between the PSKs gene
 for example, by Bob and Charlie as DMembers when extracting PSKs from Alice's Send Group 
 for creating Proposals within their own respective Send Groups.
 
+## LEAF NODE UPDATE
+
+When Bob incporates PCS from Alice's Commit into his own Send Group by importing a PSK 
+from Alice's Send Group, it is also critical that the associated leaf node changes are 
+also updated in Bob's Send Group. 
+
+Thus, when Bob creates a `psk_group_id` as defined above, it directly references a 
+specific `groupID` and `epoch` from Alice's Send Group, which itself corresponds to the 
+current leaf node of Alice for that epoch. When Bob generates a Commit covering the 
+PSK Proposal, Bob MUST also update Alice's leaf node within Bob's own Send Group to 
+match the leaf node of Alice for the given `groupID` and `epoch`. When other DMembers 
+receiving messages in Bob's Send Group receive the Commit, they MUST also update their 
+tree representations to reflect Alice's leaf node corresponding to the `groupID` and 
+`epoch`.
+
+Alice's leafe node placement in Bob's own MLS tree may be different than in Alice' MLS 
+tree, and consequently the Alice's update within her own Send Group does not correspond 
+to intermediate node updates for Alice's path in Bob's Send Group. 
+Only the leaf node is updated. 
+
+
 ## PROTECT
 
 A member Bob protects a ciphertext message and encrypts it to the DMembers by 
