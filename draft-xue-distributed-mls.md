@@ -49,8 +49,8 @@ Secrecy (FS) and Post-Compromise Security (PCS). Still, there are some use cases
 where message ordering challenges may make it difficult for a group of
 participants to agree on a common state or use cases where reaching eventual
 consistency is impractical for the application. This document describes
-Distributed-MLS (DMLS), a composition protocol for using MLS sessions to protect messages
-among participants without negotiating a common group state.
+Distributed-MLS (DMLS), a composition protocol for using MLS sessions to protect 
+messages among participants without negotiating a common group state.
 
 --- middle
 
@@ -61,16 +61,17 @@ may find it impractical to access a centralized Delivery Service (DS), or reach
 consensus on message sequencing to arrive at a consistent Commit for each
 MLS epoch.
 
-DMLS is an composition or 'super'-protocol for facilitating group messaging in
+DMLS is an composition or 'super'-group for facilitating group messaging in
 such use cases that uses MLS as a 'sub' protocol. It instantiates an MLS session 
 per participant, such that each participant acts as the 'owner' of its own group. 
-These sub-groups also act as 'send' groups, in which the owner sends all of their 
+These sub-groups also act as 'Send Groups', in which the owner sends all of their 
 application messages and determines the ordering of Proposals and Commits. This 
 allows each participant to locally and independently control the sequence
-of update processing and encrypt messages using MLS accordingingly. DMLS then 
-comprises the communication superset of such send groups.  This draft further 
-addresses how to incorporate randomness from other participants' 'send'
-groups to ensure post-compromise security (PCS) is maintained across the superset.
+of update processing and encrypt messages using MLS accordingingly. A distributed 
+group (DGroup) using DMLS then comprises the communication superset of such Send 
+Groups.  This draft further addresses how to incorporate randomness from other 
+participants' 'Send Groups' to ensure post-compromise security (PCS) is maintained 
+across the superset.
 
 ## Terminology
 
@@ -78,15 +79,18 @@ Send Group: An MLS session where one designated senber (the group 'owner') autho
 all messages and other members use the group only to receive from the designated 
 sender.
 
-DiMembers: A superset of MLS participants, $U$, comprised of the owners of all Send
-Groups within the DMLS Session.
+DGroup: the set of communication participants, i.e., the superset of all associated 
+Send Groups.
+
+DMembers: Members of the DGroup participating in the DMLS session, each as the 
+owner of a Send Group. 
 
 ## Protocol Overview
 
-Within a group U of distributed DiMember participants, we can resolve state conflict 
+Within a group distributed DMember participants, we can resolve state conflict 
 by assigning each member local state that only they control. In DMLS, we assign
-to each member ownership of an MLS group that they then operate as a Send Group. 
-The Send Group owner can export secrets from other groups owned by DiMembers and 
+to each DMember ownership of an MLS group that they then operate as a Send Group. 
+The Send Group owner can export secrets from other groups owned by DMembers and 
 import such secrets as added randomness into their own Send Group through use of 
 epochal Proposal messages. This enables each Send Group to include entropy from 
 other receive-only members of their Send Group, providing for both PCS and FS 
@@ -125,7 +129,7 @@ The DMLS operating constraints specified above allow honest members to form a
 distributed system that satisfies these requirements despite a decentralized DS. 
 Moreover, instead of mitigating or providing methods for resolving Commit collisions, 
 it effectively eliminates any risk of them occuring. It also, consequently removes the 
-risk of insider state desyncronization attacks, as an inisder (a DiMember) can only 
+risk of insider state desyncronization attacks, as an insider (a DMember) can only 
 control state in their own Send Group. The Send Group methodology ensures that a 
 single owner controls the Send sequence in their own group, including both application 
 messages and Commits. As a potential functional benefit in some use cases, DMLS further 
@@ -140,7 +144,7 @@ of the other leaf nodes is not filled in. Thus DMLS comes with functional trade-
 
 # Send Group Operation
 
-An MLS Send Group operates in the following way:
+A DMLS Send Group operates in the following way:
   * The creator of the group, occupying leaf index 0, is the designated owner of the Send
     Group
   * Other members only accept messages from the owner
@@ -163,50 +167,51 @@ with the following functions:
 
 ## INIT
 
-Given a list of DMLS participants, initialize an DMLS context by (1) creating an MLS 
-group, (2) adding all other participants (generating a set of Welcome messages and a 
+Given a list of DMLS participants, DMembers, initialize an DMLS context by (1) creating 
+an MLS group, (2) adding all other DMemebers (generating a set of Welcome messages and a 
 GroupInfo message). It is the responsibility of a DMLS implementation to define the 
-DiMembers and the mechanism of generating the individual Send Groups.
+DMembers and the mechanism of generating the individual Send Groups.
 Two possible approaches are described below.
 
 ### Over the wire definition
 
-For example, $U$ can be defined over the wire by inferring it from a newly created
+For example, the DGroup can be defined over the wire by inferring it from a newly created
 Send Group.
 
-Assume Alice has keypackages for some other DiMembers $M_i$
+Assume Alice has keypackages for some other DMembers $M_i$
 
-Alice can construct a DMLS group
+Alice can construct a DGroup
    * with a randomly generated groupId
-   * constructing a Commit adding all other DiMembers $M_i$
+   * constructing a Commit adding all other DMembers $M_i$
 
 Alice can distribute the Welcome message with an Application Message that indicates
    * this is a Send Group for Alice
-   * that defines the aet of DiMembers $U$ as the members of this group
-   * with DiMember identifier equal to the groupId for Alice's Send Group
+   * that defines the set of DMembers as the members of this group
+   * with DMember identifier equal to the groupId for Alice's Send Group
    * and defines a common export key length
 
 ### Application-directed definition
 
-$U$ can also be defined by the application layer, which provides each member:
-* keypackages for all other DiMembers in $U$
-* a random DiMember set identifier for the DMLS group
+The DGroup set of DMembers can also be defined by the application layer, which 
+provides each member:
+* keypackages for all other DMembers
+* a random set identifier for the DGroup
 * common export key length
 
 Keypackages can be reusable, e.g., marked as last-resort.
 Keypackages can also be single-use if the application layer retrieves at least $N-1$ 
 (where $|U|=N$) unique keypackages from each member.
 
-Alice can construct her view of a DMLS group:
+Alice can construct her Send Group:
 * by creating an MLS group with randomly generated groupId
-* and then constructing a Commit and Welcome message adding all other DiMembers in $U$
+* and then constructing a Commit and Welcome message adding all other DMembers
 
 With this approach, an additional message is not required as common configuration 
 items are provided by the application layer.
 
 ## UPDATE
 
-A member Alice of $U$ can introduce new key material to the DiMember set $U$ by 
+A member Alice of DGroup can introduce new key material to other DMembers by 
 authoring a full or empty Commit in Alice's own Send Group, which provides PCS with 
 regard to the committer.
 
@@ -218,7 +223,7 @@ from Alice's Send Group. Precisely, Bob:
    * Creates a PSK Proposal in Bob's Send Group using the exportPskId
       and exportPSK from the epoch of Alice's Send Group after Alice's DMLS update
    * Bob generates a Commit covering the PSK Proposal
-   * If other DiMembers have updated in their respective Send Groups, Bob may include
+   * If other DMembers have updated in their respective Send Groups, Bob may include
       more than one PSK Proposal under the Commit in his own Send Group, corresponding
      to those respective updates. 
 
@@ -238,15 +243,15 @@ epoch = (uint64) exportPskId[0..7]
 
 Per {{!RFC9420}}, the `psk_nonce` must be a fresh random value of length `KDF.Nh` when 
 the PSK Proposal is generated. This ensures key separation between the PSKs generated,  
-for example, by Bob and Charlie as DiMembers from Alice's Send Group when creating 
-Proposals for their own respective Send Groups.
+for example, by Bob and Charlie as DMembers when extracting PSKs from Alice's Send Group 
+for creating Proposals within their own respective Send Groups.
 
 ## PROTECT
 
-A member Bob protects a ciphertext message and encrypting it to the DiMembers in $U$ 
-by encrypting it as an application message in his Send Group, as in MLS. As in MLS, 
+A member Bob protects a ciphertext message and encrypts it to the DMembers by 
+encrypting it as an application message in his Send Group, as in MLS. As in MLS, 
 before encrypting an application message, Bob SHOULD incorporate any DMLS updates 
-of Bob's own or PSK proposals corresponding to updates in other DiMember Send Groups 
+of Bob's own or PSK proposals corresponding to updates in other DMember Send Groups 
 that he has observed. 
 
 Each of the 3 MLS configurations of Commit are possible:
@@ -261,23 +266,25 @@ If Bob has observed DMLS updates in others' Send Groups,
 
 ## UNPROTECT
 
-On receipt of an MLS message, a member can look up the corresponding send group
-by the MLS groupId in the message metadata and attempt to decrypt it with that
-send group.
+On receipt of an MLS message, a member can look up the corresponding Send Group
+by the MLS groupId in the message metadata and decrypt it with the keys associated 
+with that Send Group.
 
 
 # DMLS Requirements
 
 The application layer over MLS has the responsibility to define
-* The Universe $U$ of members of this DMLS group
-* Mapping groupIds to members of $U$
+* The set of DMembers within DGroup for the DMLS session
+* Mapping groupIds to members of DGroup
 * Additional common rules, such as accepted cipher suites
 
-(nothing inherently requires the send groups to agree on a cipher suite -
-each sender could choose their own as long as they agree on export key length
-)
+(Nothing inherently requires the Send Groups to agree on a cipher suite -
+each sender could choose their own, suitable to their own data transmission 
+protection requirements, as long as they agree on export key length. It is 
+advisable that the application set minimum requirements for all Send Groups 
+within the DGroup.)
 
-The DMLS layer should recommend a policy for issuing DMLS updates.
+The DMLS application should recommend a policy for issuing DMLS updates.
 
 # Wire Formats
 
