@@ -243,9 +243,11 @@ Proposals for their own respective Send Groups.
 
 ## PROTECT
 
-A member Bob protects a ciphertext message and encrypting it to $U$ by encrypting it
-as an application message in their send group. As in MLS, before encrypting an
-application message, Bob should incorporate any DMLS updates he has received.
+A member Bob protects a ciphertext message and encrypting it to the DiMembers in $U$ 
+by encrypting it as an application message in his Send Group, as in MLS. As in MLS, 
+before encrypting an application message, Bob SHOULD incorporate any DMLS updates 
+of his own or PSK proposals corresponding to updates in other DiMember Send Groups 
+that he has observed. 
 
 Each of the 3 MLS configurations of Commit are possible:
 * If Bob has observed no updates but wishes to issue an update, they can author
