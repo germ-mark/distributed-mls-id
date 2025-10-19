@@ -77,7 +77,7 @@ groups to ensure post-compromise security (PCS) is maintained across the superse
 Send Group: An MLS session where one designated senber (the group 'owner') authors
 all messages and other members use the group only to receive from the designated sender.
 
-DiMembers: A superset of MLS participants, comprised of the owners of all Send
+DiMembers: A superset of MLS participants, $U$, comprised of the owners of all Send
 Groups within the DMLS Session.
 
 ## Protocol Overview
@@ -155,14 +155,15 @@ To facilitate binding Send Groups together, we define the following exported val
 
 # Group Operations
 
-Similar to MLS, DMLS provides a participant appliation programming interface (API) with the following functions:
+Similar to MLS, DMLS provides a participant application programming interface (API) 
+with the following functions:
 
 ## INIT
 
-Given a list of DMLS participants, initialize an DMLS context by (1) creating an MLS group, (2) adding all
-other participants (generating a set of Welcome messages and a GroupInfo message).
-It is the responsibility of a DMLS implementation to define the Universe of
-participants and the mechanism of generating the individual send groups.
+Given a list of DMLS participants, initialize an DMLS context by (1) creating an MLS 
+group, (2) adding all other participants (generating a set of Welcome messages and a 
+GroupInfo message). It is the responsibility of a DMLS implementation to define the 
+DiMembers and the mechanism of generating the individual send groups.
 Two possible approaches are described below.
 
 ### Over the wire definition
@@ -170,38 +171,41 @@ Two possible approaches are described below.
 For example, $U$ can be defined over the wire by inferring it from a newly created
 send group.
 
-Assume Alice has keypackages for some other members $M_i$
+Assume Alice has keypackages for some other DiMembers $M_i$
 
 Alice can construct a DMLS group
    * with a randomly generated groupId
-   * constructing a commit adding all other members $M_i$
+   * constructing a commit adding all other DiMembers $M_i$
 
 Alice can distribute the Welcome message with an Application Message that indicates
    * this is a Send Group for Alice
-   * that defines a Universe $U$ as the members of this group
-   * with universe identifier equal to the groupId for Alice's send group
+   * that defines the aet of DiMembers $U$ as the members of this group
+   * with DiMember identifier equal to the groupId for Alice's send group
    * and defines a common export key length
 
 ### Application-directed definition
 
 $U$ can also be defined by the application layer, which provides each member:
-* keypackages for all other members in $U$
-* a random universe identifier for the DMLS group
+* keypackages for all other DiMembers in $U$
+* a random DiMember set identifier for the DMLS group
 * common export key length
 
 Keypackages can be reusable, e.g., marked as last-resort.
-Keypackages can also be single-use if the application layer retrieves $N-1$ (where $|U|=N$) unique keypackages from each member.
+Keypackages can also be single-use if the application layer retrieves at least $N-1$ 
+(where $|U|=N$) unique keypackages from each member.
 
 Alice can construct her view of a DMLS group:
 * by creating an MLS group with randomly generated groupId
-* and then constructing a Commit and Welcome message adding all other members in $U$
+* and then constructing a Commit and Welcome message adding all other DiMembers in $U$
 
-With this approach, an additional message is not required as common configuration items are provided by the application layer.
+With this approach, an additional message is not required as common configuration 
+items are provided by the application layer.
 
 ## UPDATE
 
-A member Alice of $U$ can introduce new key material to the universe $U$ by authoring a full
-or empty commit in Alice's send group, which provides PCS with regard to the committer.
+A member Alice of $U$ can introduce new key material to the DiMember set $U$ by 
+authoring a full or empty commit in Alice's own send group, which provides PCS with 
+regard to the committer.
 
 ## COMMIT
 
