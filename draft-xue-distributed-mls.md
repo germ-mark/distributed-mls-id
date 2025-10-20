@@ -331,11 +331,11 @@ and cause desynchronization of the group view. This is unlike in MLS, where all
 contributing parties must behave honestly to avoid state disruption.
 
 As in MLS, it is essential for PCS security that all members update frequently.
-In MLS, if a member Bob does not receive the update from another member,
+In MLS, if a member Bob does not receive an update from another member,
 Alice, Bob's state will become desynchronized from the rest of the MLS group,
 leading Bob to be unable to send messages that other group members (which have
-correctly processed Alice's updates) will be able to decrypt and also prevent
-Bob from decrypting messages received by those members. Bob must obtain the missing
+correctly processed Alice's updates) will be able to decrypt and also preventing
+Bob from decrypting messages sent by those members. Bob must obtain the missing
 Alice update from the DS. In DMLS, however, the removal of desynchronization risk
 means that Bob will continue to be able to send messages to DMembers in Bob's Send
 Group even if Bob has not yet observed Alice's update. This presents both a benefit
