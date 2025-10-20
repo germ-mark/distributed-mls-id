@@ -76,26 +76,27 @@ Copyright Notice
 Table of Contents
 
    1.  Introduction
-     1.1.  Terminology
-     1.2.  Protocol Overview
-     1.3.  Meeting MLS Delivery Service Requirements
-   2.  Send Group Operation
-     2.1.  Send Group Mutation
-       2.1.1.  (DMLS Update) Broadcast new keys for creator
-       2.1.2.  (DMLS Commit) Incorporate new key material from others
-     2.2.  LEAF NODE UPDATE
-   3.  Group Operations
-     3.1.  INIT
-     3.2.  UPDATE
-     3.3.  COMMIT
-     3.4.  PROTECT
-     3.5.  UNPROTECT
-   4.  Wire Formats
-   5.  Conventions and Definitions
-   6.  Security Considerations
-   7.  IANA Considerations
-   8.  References
-   9.  Normative References
+   2.  Terminology
+   3.  Protocol Overview
+     3.1.  Meeting MLS Delivery Service Requirements
+   4.  Protocol Definition
+     4.1.  Send Group Operation
+       4.1.1.  Send Group Mutation
+       4.1.2.  Leaf Node Update
+     4.2.  Group Operations
+       4.2.1.  INIT
+       4.2.2.  UPDATE
+       4.2.3.  COMMIT
+       4.2.4.  PROTECT
+       4.2.5.  UNPROTECT
+   5.  Characteristics
+     5.1.  Tolerance to dropped messages
+   6.  Wire Formats
+   7.  Conventions and Definitions
+   8.  Security Considerations
+   9.  IANA Considerations
+   10. References
+   11. Normative References
    Acknowledgments
    Authors' Addresses
 
@@ -120,7 +121,7 @@ Table of Contents
    participants' 'Send Groups' to ensure post-compromise security (PCS)
    is maintained across the superset.
 
-1.1.  Terminology
+2.  Terminology
 
    Send Group: An MLS session where one designated sender (the group
    'owner') authors all messages and other members use the group only to
@@ -134,7 +135,7 @@ Table of Contents
 
    DMembers: Members of the DGroup participating in the DMLS session.
 
-1.2.  Protocol Overview
+3.  Protocol Overview
 
    Within a group of distributed DMembers, we can resolve state conflict
    by assigning each member local state that only they control.  In a
@@ -149,7 +150,7 @@ Table of Contents
    their Send Group, providing for both PCS and FS without the need to
    reach global consensus on ordering of updates.
 
-1.3.  Meeting MLS Delivery Service Requirements
+3.1.  Meeting MLS Delivery Service Requirements
 
    The MLS Architecture Guide specifies two requirements for an abstract
    Delivery Service related to message ordering.  First, Proposal
@@ -206,25 +207,27 @@ Table of Contents
    parent path of the other leaf nodes is not filled in.  Thus DMLS
    comes with functional trade-offs.
 
-2.  Send Group Operation
+4.  Protocol Definition
+
+4.1.  Send Group Operation
 
    A DMLS Send Group operates in the following way: * The creator of the
    group, occupying leaf index 0, is the designated owner of the Send
    Group * Other members only accept messages from the owner * Members
    only accept messages as defined in Group Operations
 
-2.1.  Send Group Mutation
+4.1.1.  Send Group Mutation
 
    Under this configuration, only the Send Group owner can mutate the
    group.  The owner can commit to their Send Group to update their leaf
    node and/or to incorporate new keys and entropy from other DMembers.
 
-2.1.1.  (DMLS Update) Broadcast new keys for creator
+4.1.1.1.  (DMLS Update) Broadcast new keys for creator
 
    Alice can provide PCS for herself in her send group by authoring a
    (full or empty) commit that updates her own leaf node.
 
-2.1.2.  (DMLS Commit) Incorporate new key material from others
+4.1.1.2.  (DMLS Commit) Incorporate new key material from others
 
    If Alice has received DMLS updates from other members, Alice can
    incorporate them as follows:
@@ -241,7 +244,7 @@ Table of Contents
    An MLS Commit in a Send Group can convey either a DMLS Update or
    Commit, or both.
 
-2.2.  LEAF NODE UPDATE
+4.1.2.  Leaf Node Update
 
    When Bob incorporates PCS from Alice's Commit into his own Send Group
    by importing a PSK from Alice's Send Group, it is also critical that
@@ -263,12 +266,12 @@ Table of Contents
    her own Send Group does not correspond to intermediate node updates
    for Alice's path in Bob's Send Group.  Only the leaf node is updated.
 
-3.  Group Operations
+4.2.  Group Operations
 
    Similar to MLS, DMLS provides a participant application programming
    interface (API) with the following functions:
 
-3.1.  INIT
+4.2.1.  INIT
 
    An application constructs a DMLS Session by defining * the DGroup * a
    scheme for assigning a Send Group identifier for each DMember *
@@ -288,15 +291,15 @@ Table of Contents
    with the assigned Send Group identifier * adding all other Dembers *
    distributing the resulting welcome message
 
-3.2.  UPDATE
+4.2.2.  UPDATE
 
    As defined above under Send Group Mutation
 
-3.3.  COMMIT
+4.2.3.  COMMIT
 
    As defined above under Send Group Mutation
 
-3.4.  PROTECT
+4.2.4.  PROTECT
 
    A member Bob protects a ciphertext message and encrypts it to the
    DMembers by encrypting it as an application message in his Send
@@ -305,19 +308,71 @@ Table of Contents
    proposals corresponding to updates in other DMember Send Groups that
    he has observed.
 
-3.5.  UNPROTECT
+4.2.5.  UNPROTECT
 
    On receipt of an MLS message, a member can look up the corresponding
    Send Group by the MLS groupID in the message metadata and decrypt it
    with the keys associated with that Send Group.
 
-4.  Wire Formats
+5.  Characteristics
+
+   Under DMLS, members can successfully encrypt messages at any time
+   without waiting for in-flight handshake messages from other members.
+   A DMLS commit by Alice acknowledges to everyone else the newest DMLS
+   update Alice has received from each member.  Alice can delete her
+   k_th leaf node private key when all members have committed a newer
+   leafNode from her.
+
+   An offline member that has not been issuing DMLS commits may prevent
+   Alice from deleting old private keys.  Applications SHOULD handle
+   offline members by dropping them from the send group.  For example,
+   if Bob has been offline past an application's threshold and not
+   acknowleged Alice's kth update, Alice may choose to delete her k_th
+   key anyway, allowing for the chance that she may stop receiving
+   messages from Bob (if Bob later commits Alice's kth update).
+
+   Alice can signal this in her next DMLS update or commit by removing
+   Bob from her Send Group.  This allows each member of the universe to
+   independently excise offline members, and signal to everyone
+   (including the removed member) that they are doing so.  On receipt of
+   Alice's removal of Bob, another DMember Charlie MUST also remove Bob
+   from his Send Group, as Bob will not be able to process any future
+   DMLS commit that incorporates newer group state from Alice.
+
+   Reintroducing offline members is outside the scope of this draft, and
+   could be done by initiating a new DGroup.
+
+5.1.  Tolerance to dropped messages
+
+   Analogously to MLS, where members must receive every commit message
+   and apply them in order to be able to compute the group's most recent
+   state, in DMLS each member must receive every commit from every other
+   member.  Recipients must apply commits from each send group in order,
+   aided by MLS message metadata.
+
+   The injection of PSK's across groups introduces an additional commit
+   ordering dependency, in addition to the requirement that commits of
+   the same group be applide in order.
+
+   The format of the PSK ID helps members order the application of
+   commits across send groups to succesfully import PSK's: * Alice
+   issues a DMLS update in the commit starting epoch k of her send
+   group.  * Bob receives Alice's kth DMLS update, and incorporates it
+   in the j_th commit of his send groups * Charlie, on receipt of Bob's
+   j_th commit, can process it and understand it depends on a psk_id
+   that he can parse as k_th commit from Alice.
+
+   The dependency order of commits forms a directed graph among pairs of
+   (epoch, groupId) in a DMLS Session.  We can recursively prove this is
+   an acyclic graph.
+
+6.  Wire Formats
 
    DMLS uses standard wire formats as defined in [RFC9420].  An
    application using DMLS SHOULD define formats for any additional
    messages containing common configuration or operational parameters.
 
-5.  Conventions and Definitions
+7.  Conventions and Definitions
 
    The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
    "SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", "MAY", and
@@ -325,7 +380,7 @@ Table of Contents
    BCP 14 [RFC2119] [RFC8174] when, and only when, they appear in all
    capitals, as shown here.
 
-6.  Security Considerations
+8.  Security Considerations
 
    DMLS inherits and matches MLS in most security considerations with
    one notable change to security control nuances.  In MLS each group
@@ -354,13 +409,13 @@ Table of Contents
    behave honestly to avoid state disruption.
 
    As in MLS, it is essential for PCS security that all members update
-   frequently.  In MLS, if a member Bob does not receive the update from
+   frequently.  In MLS, if a member Bob does not receive an update from
    another member, Alice, Bob's state will become desynchronized from
    the rest of the MLS group, leading Bob to be unable to send messages
    that other group members (which have correctly processed Alice's
-   updates) will be able to decrypt and also prevent Bob from decrypting
-   messages received by those members.  Bob must obtain the missing
-   Alice update from the DS.  In DMLS, however, the removal of
+   updates) will be able to decrypt and also preventing Bob from
+   decrypting messages sent by those members.  Bob must obtain the
+   missing Alice update from the DS.  In DMLS, however, the removal of
    desynchronization risk means that Bob will continue to be able to
    send messages to DMembers in Bob's Send Group even if Bob has not yet
    observed Alice's update.  This presents both a benefit and a risk, as
@@ -372,11 +427,11 @@ Table of Contents
    remove members from which no update has been observed for an
    excessive period.
 
-7.  IANA Considerations
+9.  IANA Considerations
 
    This document has no IANA actions.
 
-8.  References
+10.  References
 
    CAPBR: # Brewer, E., "Towards robust distributed systems (abstract)",
    ACM, Proceedings of the nineteenth annual ACM symposium on Principles
@@ -384,7 +439,7 @@ Table of Contents
    https://doi.org/10.1145/343477.343502
    (https://doi.org/10.1145/343477.343502).
 
-9.  Normative References
+11.  Normative References
 
    [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate
               Requirement Levels", BCP 14, RFC 2119,
