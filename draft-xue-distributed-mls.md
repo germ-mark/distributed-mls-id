@@ -75,7 +75,7 @@ across the superset.
 
 ## Terminology
 
-Send Group: An MLS session where one designated senber (the group 'owner') authors
+Send Group: An MLS session where one designated sender (the group 'owner') authors
 all messages and other members use the group only to receive from the designated
 sender.
 
@@ -168,7 +168,7 @@ with the following functions:
 ## INIT
 
 Given a list of DMLS participants, DMembers, initialize an DMLS context by (1) creating
-an MLS group, (2) adding all other DMemebers (generating a set of Welcome messages and a
+an MLS group, (2) adding all other DMembers (generating a set of Welcome messages and a
 GroupInfo message). It is the responsibility of a DMLS implementation to define the
 DMembers and the mechanism of generating the individual Send Groups.
 Two possible approaches are described below.
