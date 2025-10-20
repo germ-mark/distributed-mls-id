@@ -45,7 +45,7 @@ informative:
 
 The Messaging Layer Security (MLS) protocol enables a group of participants to
 negotiate a common cryptographic state for messaging, providing Forward
-Secrecy (FS) and Post-Compromise Security (PCS). Still, there are some use cases
+Secrecy (FS) and Post-Compromise Security (PCS). There are some use cases
 where message ordering challenges may make it difficult for a group of
 participants to agree on a common state or use cases where reaching eventual
 consistency is impractical for the application. This document describes
@@ -73,26 +73,29 @@ Groups.  This draft further addresses how to incorporate randomness from other
 participants' 'Send Groups' to ensure post-compromise security (PCS) is maintained
 across the superset.
 
-## Terminology
+# Terminology
 
-Send Group: An MLS session where one designated senber (the group 'owner') authors
+Send Group: An MLS session where one designated sender (the group 'owner') authors
 all messages and other members use the group only to receive from the designated
 sender.
 
-DGroup: the set of communication participants, i.e., the superset of all associated
-Send Groups.
+DMLS Session: A session between a set of communication participants, where each
+participant can broadcast messages by operating their Send Group.
 
-DMembers: Members of the DGroup participating in the DMLS session, each as the
-owner of a Send Group.
+DGroup: the set of communication participants of a DMLS Session.
 
-## Protocol Overview
+DMembers: Members of the DGroup participating in the DMLS session.
 
-Within a group distributed DMember participants, we can resolve state conflict
-by assigning each member local state that only they control. In DMLS, we assign
+# Protocol Overview
+
+Within a group of distributed DMembers, we can resolve state conflict
+by assigning each member local state that only they control. In a DMLS Session, we assign
 to each DMember ownership of an MLS group that they then operate as a Send Group.
 The Send Group owner can export secrets from other groups owned by DMembers and
 import such secrets as added randomness into their own Send Group through use of
-epochal Proposal messages. This enables each Send Group to include entropy from
+epochal Proposal messages. The Send Group owner can also update leaf nodes of other DMembers,
+as those DMembers publish new public keys in their own send group.
+This enables each Send Group to include entropy and fresh public keys from
 other receive-only members of their Send Group, providing for both PCS and FS
 without the need to reach global consensus on ordering of updates.
 
@@ -133,7 +136,7 @@ risk of insider state desyncronization attacks, as an insider (a DMember) can on
 control state in their own Send Group. The Send Group methodology ensures that a
 single owner controls the Send sequence in their own group, including both application
 messages and Commits. As a potential functional benefit in some use cases, DMLS further
-enables flexibility in receive-only modes, namely that any DiMember can continue to
+enables flexibility in receive-only modes, namely that any DMember can continue to
 receive messages sent from other groups, even if not sending information themselves.
 
 Downsides of the DMLS design that may make it not suitable for all settings include
@@ -142,117 +145,48 @@ nodes along the parent path of any non-owner remain blank. While the owner path 
 when it Commits and other leaf nodes can be updated as explained later, the parent path
 of the other leaf nodes is not filled in. Thus DMLS comes with functional trade-offs.
 
-# Send Group Operation
+# Protocol Definition
+
+## Send Group Operation
 
 A DMLS Send Group operates in the following way:
   * The creator of the group, occupying leaf index 0, is the designated owner of the Send
     Group
   * Other members only accept messages from the owner
   * Members only accept messages as defined in Group Operations
-  * Each group owner updates their contribution to the group with a full or empty Commit.
-    To incorporate fresh keying material inputs from another member, the group owner
-    creates an exporter key from the other member's Send Group and imports the PSK into
-    its own Send Group using a PSK Proposal.
 
-To facilitate binding Send Groups together, we define the following exported values:
-   * derived groupid: `MLS-Exporter("derivedGroupId", leafNodePublicSigningKey, Length)`
+### Send Group Mutation
 
-      This is a unique value for each participant derived from the group's current epoch
-   * exportPSK: `MLS-Exporter("exporter-psk", "psk_id", KDF.Nh)`
+Under this configuration, only the Send Group owner can mutate the group.
+The owner can commit to their Send Group to update their leaf node and/or to incorporate
+new keys and entropy from other DMembers.
 
-# Group Operations
+#### (DMLS Update) Broadcast new keys for creator
+Alice can provide PCS for herself in her send group by authoring a (full or empty)
+commit that updates her own leaf node.
 
-Similar to MLS, DMLS provides a participant application programming interface (API)
-with the following functions:
+#### (DMLS Commit) Incorporate new key material from others
+If Alice has received DMLS updates from other members, Alice can incorporate them as
+follows:
 
-## INIT
+If the latest DMLS Update Alice received from Bob in his Send Group is a commit
+starting epoch k, and was not already incorporated into Alice's Send Group,
+Alice can author a commit that
+*  imports a PSK from Bob's send group, epoch k with the following parameters
+   *  psk_id: k || (Bob's Send Group's groupID)
+      where k is a fixed width 8-byte encoding of the epoch in network byte order
+   *  psk: MLS-Exporter("exporter-psk", "psk_id", KDF.Nh)
+*  replaces Bob's leaf node in Alice's send group with Bob's new leaf note in commit k
 
-Given a list of DMLS participants, DMembers, initialize an DMLS context by (1) creating
-an MLS group, (2) adding all other DMemebers (generating a set of Welcome messages and a
-GroupInfo message). It is the responsibility of a DMLS implementation to define the
-DMembers and the mechanism of generating the individual Send Groups.
-Two possible approaches are described below.
+An MLS Commit in a Send Group can convey either a DMLS Update or Commit, or both.
 
-### Over the wire definition
+### Leaf Node Update
 
-For example, the DGroup can be defined over the wire by inferring it from a newly created
-Send Group.
-
-Assume Alice has keypackages for some other DMembers $M_i$
-
-Alice can construct a DGroup
-   * with a randomly generated groupId
-   * constructing a Commit adding all other DMembers $M_i$
-
-Alice can distribute the Welcome message with an Application Message that indicates
-   * this is a Send Group for Alice
-   * that defines the set of DMembers as the members of this group
-   * with DMember identifier equal to the groupId for Alice's Send Group
-   * and defines a common export key length
-
-### Application-directed definition
-
-The DGroup set of DMembers can also be defined by the application layer, which
-provides each member:
-* keypackages for all other DMembers
-* a random set identifier for the DGroup
-* common export key length
-
-Keypackages can be reusable, e.g., marked as last-resort.
-Keypackages can also be single-use if the application layer retrieves at least $N-1$
-(where $|U|=N$) unique keypackages from each member.
-
-Alice can construct her Send Group:
-* by creating an MLS group with randomly generated groupId
-* and then constructing a Commit and Welcome message adding all other DMembers
-
-With this approach, an additional message is not required as common configuration
-items are provided by the application layer.
-
-## UPDATE
-
-A member Alice of DGroup can introduce new key material to other DMembers by
-authoring a full or empty Commit in Alice's own Send Group, which provides PCS with
-regard to the committer.
-
-## COMMIT
-
-When Bob receives Alice's DMLS update (as a full or empty Commit in Alice's Send Group),
-Bob can incorporate PCS from Alice's Commit into his own Send Group by importing a PSK
-from Alice's Send Group. Precisely, Bob:
-   * Creates a PSK Proposal in Bob's Send Group using the exportPskId
-      and exportPSK from the epoch of Alice's Send Group after Alice's DMLS update
-   * Bob generates a Commit covering the PSK Proposal
-   * If other DMembers have updated in their respective Send Groups, Bob MAY include
-      more than one PSK Proposal under the Commit in his own Send Group, corresponding
-     to those respective updates.
-
-The `psk_group_id` for this PSK is more specifically defined as follows:
-```
-psk_group_id = (opaque<8>) groupEpoch | groupId
-```
-where `epoch_bytes` is the byte-vector representation of the epoch in which the exporter
-was generated, in network byte order. Since epoch is of type `uint64`, this results in a
-fixed 8-byte vector. `groupId`, which is of type `opaque<V>`, is then appended to
-`epoch_bytes`. When a `exportPskId` is received as part of an incoming PSK Proposal, it
-can then be processed as follows:
-```
-groupId = exportPskId[8..]
-epoch = (uint64) exportPskId[0..7]
-```
-
-Per {{!RFC9420}}, the `psk_nonce` MUST be a fresh random value of length `KDF.Nh` when
-the PSK Proposal is generated. This ensures key separation between the PSKs generated,
-for example, by Bob and Charlie as DMembers when extracting PSKs from Alice's Send Group
-for creating Proposals within their own respective Send Groups.
-
-## LEAF NODE UPDATE
-
-When Bob incporates PCS from Alice's Commit into his own Send Group by importing a PSK
+When Bob incorporates PCS from Alice's Commit into his own Send Group by importing a PSK
 from Alice's Send Group, it is also critical that the associated leaf node changes are
 also updated in Bob's Send Group.
 
-Thus, when Bob creates a `psk_group_id` as defined above, it directly references a
+Thus, when Bob creates a `psk_id` as defined above, it directly references a
 specific `groupID` and `epoch` from Alice's Send Group, which itself corresponds to the
 current leaf node of Alice for that epoch. When Bob generates a Commit covering the
 PSK Proposal, Bob MUST also update Alice's leaf node within Bob's own Send Group to
@@ -266,38 +200,18 @@ tree, and consequently the Alice's update within her own Send Group does not cor
 to intermediate node updates for Alice's path in Bob's Send Group.
 Only the leaf node is updated.
 
+## Group Operations
 
-## PROTECT
+Similar to MLS, DMLS provides a participant application programming interface (API)
+with the following functions:
 
-A member Bob protects a ciphertext message and encrypts it to the DMembers by
-encrypting it as an application message in his Send Group, as in MLS. As in MLS,
-before encrypting an application message, Bob SHOULD incorporate any DMLS updates
-of Bob's own or PSK proposals corresponding to updates in other DMember Send Groups
-that he has observed.
+### INIT
 
-Each of the 3 MLS configurations of Commit are possible:
-* If Bob has observed no updates but wishes to issue an update, Bob can author
-  an empty Commit.
-If Bob has observed DMLS updates in others' Send Groups,
-* Bob can incorporate those updates without an update of his own with a partial
-  Commit covering PSK Proposals he derives from each of the other updated Send Groups.
-* Alternatively, Bob can incorporate those updates as well as an update of Bob's own
-  by covering those PSK Proposals with a full Commit.
-
-
-## UNPROTECT
-
-On receipt of an MLS message, a member can look up the corresponding Send Group
-by the MLS groupId in the message metadata and decrypt it with the keys associated
-with that Send Group.
-
-
-# DMLS Requirements
-
-The application layer over MLS has the responsibility to define
-* The set of DMembers within DGroup for the DMLS session
-* Mapping groupIds to members of DGroup
-* Additional common rules, such as accepted cipher suites
+An application constructs a DMLS Session by defining
+* the DGroup
+* a scheme for assigning a Send Group identifier for each DMember
+* allowed cipher suites, and an export key length.
+and distributing an initial keypackage for each DMember
 
 (Nothing inherently requires the Send Groups to agree on a cipher suite -
 each sender could choose their own, suitable to their own data transmission
@@ -306,6 +220,79 @@ advisable that the application set minimum requirements for all Send Groups
 within the DGroup.)
 
 The DMLS application SHOULD recommend a policy for issuing DMLS updates.
+
+Each DMember creates their Send Group by constructing a MLS group
+*  with the assigned Send Group identifier
+*  adding all other Dembers
+*  distributing the resulting welcome message
+
+### UPDATE
+
+As defined above under Send Group Mutation
+
+### COMMIT
+
+As defined above under Send Group Mutation
+
+### PROTECT
+
+A member Bob protects a ciphertext message and encrypts it to the DMembers by
+encrypting it as an application message in his Send Group, as in MLS. As in MLS,
+before encrypting an application message, Bob SHOULD incorporate any DMLS updates
+of Bob's own or PSK proposals corresponding to updates in other DMember Send Groups
+that he has observed.
+
+### UNPROTECT
+
+On receipt of an MLS message, a member can look up the corresponding Send Group
+by the MLS groupID in the message metadata and decrypt it with the keys associated
+with that Send Group.
+
+# Characteristics
+
+Under DMLS, members can successfully encrypt messages at any time without waiting for
+in-flight handshake messages from other members. A DMLS commit by Alice acknowledges
+to everyone else the newest DMLS update Alice has received from each member.
+Alice can delete her k_th leaf node private key when all members have committed
+a newer leafNode from her.
+
+An offline member that has not been issuing DMLS commits may prevent Alice from deleting
+old private keys. Applications SHOULD handle offline members by dropping
+them from the send group.
+For example, if Bob has been offline past an application's threshold and not acknowleged
+Alice's kth update,
+Alice may choose to delete her k_th key anyway, allowing for the chance that she may stop
+receiving messages from Bob (if Bob later commits Alice's kth update).
+
+Alice can signal this in her next DMLS update or commit by
+removing Bob from her Send Group. This allows each member of the universe to
+independently excise offline members, and signal to everyone (including the removed member)
+that they are doing so. On receipt of Alice's removal of Bob, another DMember Charlie MUST also
+remove Bob from his Send Group,
+as Bob will not be able to process any future DMLS commit that incorporates newer
+group state from Alice.
+
+Reintroducing offline members is outside the scope of this draft, and could be done by initiating a new
+DGroup.
+
+## Tolerance to dropped messages
+
+Analogously to MLS, where members must receive every commit message and apply them in order
+to be able to compute the group's most recent state, in DMLS each member must receive every commit
+from every other member. Recipients must apply commits from each send group in order, aided by
+MLS message metadata.
+
+The injection of PSK's across groups introduces an additional commit ordering dependency, in addition
+to the requirement that commits of the same group be applide in order.
+
+The format of the PSK ID helps members order the application of commits across send groups to succesfully
+import PSK's:
+   * Alice issues a DMLS update in the commit starting epoch k of her send group.
+   * Bob receives Alice's kth DMLS update, and incorporates it in the j_th commit of his send groups
+   * Charlie, on receipt of Bob's j_th commit, can process it and understand it depends on a psk_id that he can parse as k_th commit from Alice.
+
+The dependency order of commits forms a directed graph among pairs of (epoch, groupId) in a DMLS Session.
+We can recursively prove this is an acyclic graph.
 
 # Wire Formats
 
@@ -344,11 +331,11 @@ and cause desynchronization of the group view. This is unlike in MLS, where all
 contributing parties must behave honestly to avoid state disruption.
 
 As in MLS, it is essential for PCS security that all members update frequently.
-In MLS, if a member Bob does not receive the update from another member,
+In MLS, if a member Bob does not receive an update from another member,
 Alice, Bob's state will become desynchronized from the rest of the MLS group,
 leading Bob to be unable to send messages that other group members (which have
-correctly processed Alice's updates) will be able to decrypt and also prevent
-Bob from decrypting messages received by those members. Bob must obtain the missing
+correctly processed Alice's updates) will be able to decrypt and also preventing
+Bob from decrypting messages sent by those members. Bob must obtain the missing
 Alice update from the DS. In DMLS, however, the removal of desynchronization risk
 means that Bob will continue to be able to send messages to DMembers in Bob's Send
 Group even if Bob has not yet observed Alice's update. This presents both a benefit
