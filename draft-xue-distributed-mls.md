@@ -93,11 +93,11 @@ by assigning each member local state that only they control. In a DMLS Session, 
 to each DMember ownership of an MLS group that they then operate as a Send Group.
 The Send Group owner can export secrets from other groups owned by DMembers and
 import such secrets as added randomness into their own Send Group through use of
-epochal Proposal messages. The Send Group owner can also Update leaf nodes of other 
-DMembers; if updating the leaf nodes of other DMembers within the owner's Send 
-Group, the owner MUST use the public keys published by the respective DMember within 
-their own Send Group. This enables each Send Group to include entropy and fresh 
-public keys from other receive-only members of their Send Group, providing for both 
+epochal Proposal messages. The Send Group owner can also Update leaf nodes of other
+DMembers; if updating the leaf nodes of other DMembers within the owner's Send
+Group, the owner MUST use the public keys published by the respective DMember within
+their own Send Group. This enables each Send Group to include entropy and fresh
+public keys from other receive-only members of their Send Group, providing for both
 PCS and FS without the need to reach global consensus on ordering of Updates.
 
 ## Meeting MLS Delivery Service Requirements
@@ -258,33 +258,33 @@ Alice can delete her k_th leaf node private key when all members have committed
 a newer leafNode from her.
 
 An offline member that has not been issuing DMLS Commits may prevent Alice from deleting
-old private keys. As in MLS, applications SHOULD handle members that are offline for 
+old private keys. As in MLS, applications SHOULD handle members that are offline for
 excessive periods by dropping them from the Send Group.
 For example, if Bob has been offline past an application's threshold and not acknowleged
-Alice's kth Update, Alice may choose to delete her k_th key anyway, allowing for the chance 
+Alice's kth Update, Alice may choose to delete her k_th key anyway, allowing for the chance
 that she may stop receiving messages from Bob (if Bob later Commits Alice's kth Update).
 
 Alice can signal this in her next DMLS Update or Commit by
 removing Bob from her Send Group. This allows each member of the universe to
 independently excise offline members, and signal to everyone (including the removed member)
-that they are doing so. On receipt of Alice's removal of Bob, another DMember Charlie MUST 
-also remove Bob from his Send Group, as Bob will not be able to process any future DMLS 
+that they are doing so. On receipt of Alice's removal of Bob, another DMember Charlie MUST
+also remove Bob from his Send Group, as Bob will not be able to process any future DMLS
 Commit that incorporates newer group state from Alice.
 
-Reintroducing offline members is outside the scope of this draft, and could be done by 
+Reintroducing offline members is outside the scope of this draft, and could be done by
 initiating a new DGroup.
 
 ## Tolerance to dropped messages
 
-Analogously to MLS, where members must receive every Commit message and apply them in 
-order to be able to compute the group's most recent state, withing a given Send Group, 
-each DMember must receive every Commit from the Send Group owner. Recipients must apply 
-Commits from each Send Group in order provided by the Send Group owner, aided by MLS 
+Analogously to MLS, where members must receive every Commit message and apply them in
+order to be able to compute the group's most recent state, withing a given Send Group,
+each DMember must receive every Commit from the Send Group owner. Recipients must apply
+Commits from each Send Group in order provided by the Send Group owner, aided by MLS
 message metadata.
 
-The injection of PSK's across groups introduces an additional desirable Commit ordering 
-consideration, although injection order is within the control of the Send Group owner. 
-The format of the PSK ID helps DMembers order the application of Commits across Send 
+The injection of PSK's across groups introduces an additional desirable Commit ordering
+consideration, although injection order is within the control of the Send Group owner.
+The format of the PSK ID helps DMembers order the application of Commits across Send
 Groups to succesfully import PSK's:
    * Alice issues a DMLS Update in the Commit starting epoch k of her Send Group.
    * Bob receives Alice's kth DMLS Update, and incorporates it in the j_th Commit of his
@@ -292,7 +292,7 @@ Groups to succesfully import PSK's:
    * Charlie, on receipt of Bob's j_th Commit, can process it and understand it depends
      on a psk_id that he can parse as k_th Commit from Alice.
 
-The dependency order of Commits forms a directed (acyclic) graph among pairs of 
+The dependency order of Commits forms a directed (acyclic) graph among pairs of
 (epoch, groupId) in a DMLS Session.
 
 # Wire Formats
