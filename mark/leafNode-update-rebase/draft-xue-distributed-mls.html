@@ -1,0 +1,1693 @@
+<!DOCTYPE html>
+<html lang="en" class="Internet-Draft">
+<head>
+<meta charset="utf-8">
+<meta content="Common,Latin" name="scripts">
+<meta content="initial-scale=1.0" name="viewport">
+<title>Distributed MLS</title>
+<meta content="Mark Xue" name="author">
+<meta content="Joseph W. Lukefahr" name="author">
+<meta content="Britta Hale" name="author">
+<meta content="
+       The Messaging Layer Security (MLS) protocol enables a group of participants to
+negotiate a common cryptographic state for messaging, providing Forward
+Secrecy (FS) and Post-Compromise Security (PCS). Still, there are some use cases
+where message ordering challenges may make it difficult for a group of
+participants to agree on a common state or use cases where reaching eventual
+consistency is impractical for the application. This document describes
+Distributed-MLS (DMLS), a composition protocol for using MLS sessions to protect
+messages among participants without negotiating a common group state. 
+    " name="description">
+<meta content="xml2rfc 3.31.0" name="generator">
+<meta content="messaging layer security" name="keyword">
+<meta content="end-to-end encryption" name="keyword">
+<meta content="post-compromise security" name="keyword">
+<meta content="draft-xue-distributed-mls-latest" name="ietf.draft">
+<!-- Generator version information:
+  xml2rfc 3.31.0
+    Python 3.12.12
+    ConfigArgParse 1.7
+    google-i18n-address 3.1.1
+    intervaltree 3.1.0
+    Jinja2 3.1.6
+    lxml 5.3.1
+    platformdirs 4.5.0
+    pycountry 24.6.1
+    PyYAML 6.0.2
+    requests 2.32.5
+    wcwidth 0.2.14
+-->
+<link href="draft-xue-distributed-mls.xml" rel="alternate" type="application/rfc+xml">
+<link href="#copyright" rel="license">
+<style type="text/css">@font-face {
+  font-family: 'Lora';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Italic'), local('Lora-Italic'), url('https://martinthomson.github.io/rfc-css/fonts/lora-italic-cyrillic-ext.woff2') format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Italic'), local('Lora-Italic'), url('https://martinthomson.github.io/rfc-css/fonts/lora-italic-cyrillic-ext.woff2') format('woff2');
+  unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Italic'), local('Lora-Italic'), url('https://martinthomson.github.io/rfc-css/fonts/lora-italic-vietnamese.woff2') format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+1EA0-1EF9, U+20AB;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Italic'), local('Lora-Italic'), url('https://martinthomson.github.io/rfc-css/fonts/lora-italic-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'Lora';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Italic'), local('Lora-Italic'), url('https://martinthomson.github.io/rfc-css/fonts/lora-italic-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Regular'), local('Lora-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/lora-regular-cyrillic-ext.woff2') format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Regular'), local('Lora-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/lora-regular-cyrillic.woff2') format('woff2');
+  unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Regular'), local('Lora-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/lora-regular-vietnamese.woff2') format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+1EA0-1EF9, U+20AB;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Regular'), local('Lora-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/lora-regular-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Regular'), local('Lora-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/lora-regular-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local('Lora Bold'), local('Lora-Bold'), url('https://martinthomson.github.io/rfc-css/fonts/lora-bold-cyrillic-ext.woff2') format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local('Lora Bold'), local('Lora-Bold'), url('https://martinthomson.github.io/rfc-css/fonts/lora-bold-cyrillic.woff2') format('woff2');
+  unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local('Lora Bold'), local('Lora-Bold'), url('https://martinthomson.github.io/rfc-css/fonts/lora-bold-vietnamese.woff2') format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+1EA0-1EF9, U+20AB;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local('Lora Bold'), local('Lora-Bold'), url('https://martinthomson.github.io/rfc-css/fonts/lora-bold-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local('Lora Bold'), local('Lora-Bold'), url('https://martinthomson.github.io/rfc-css/fonts/lora-bold-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: local('Lora SemiBold'), local('Lora-SemiBold'), url('https://martinthomson.github.io/rfc-css/fonts/lora-semibold-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Oxygen Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Oxygen Mono'), local('OxygenMono-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/oxygenmono-regular-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Oxygen Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Oxygen Mono'), local('OxygenMono-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/oxygenmono-regular-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: italic;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-italic-cyrillic-ext.woff2') format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: italic;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-italic-cyrillic.woff2') format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: italic;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-italic-greek.woff2') format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: italic;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-italic-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: italic;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-italic-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: normal;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-regular-cyrillic-ext.woff2') format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: normal;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-regular-cyrillic.woff2') format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: normal;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-regular-greek.woff2') format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: normal;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-regular-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: normal;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-regular-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+:root {
+  color-scheme: light dark;
+  --background-color: #fff;
+  --text-color: #222;
+  --title-color: #191919;
+  --link-color: #2a6496;
+  --highlight-color: #f9f9f9;
+  --line-color: #eee;
+  --pilcrow-weak: #ddd;
+  --pilcrow-strong: #bbb;
+  --small-font-size: 14.5px;
+  --font-mono: 'Oxygen Mono', monospace;
+  --font-title: "Sofia Sans Semi Condensed", sans-serif;
+  scrollbar-color: #bbb #eee;
+}
+body {
+  max-width: 600px;
+  margin: 75px auto;
+  padding: 0 5px;
+  color: var(--text-color);
+  background-color: var(--background-color);
+  font: 16px/22px "Lora", serif;
+  scroll-behavior: smooth;
+}
+
+.ears {
+  display: none;
+}
+
+/* headings */
+section {
+  clear: both;
+}
+.section-number {
+  padding-right: 0.5em;
+}
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-title);
+  font-weight: 680;
+  margin: 0.8em 0 0.3em;
+  font-size-adjust: 0.5;
+  color: var(--title-color);
+}
+h1#title {
+  font-size: 32px;
+  line-height: 40px;
+  clear: both;
+}
+h1#title, h1#rfcnum {
+  margin: 1.5em 0 0.2em;
+}
+h1#rfcnum + h1#title {
+  margin: 0.2em 0;
+}
+
+h1, h2, h3 {
+  font-size: 22px;
+  line-height: 27px;
+}
+h4, h5, h6 {
+  font-size: 20px;
+  line-height: 24px;
+}
+
+/* general structure */
+.author {
+  padding-bottom: 0.3em;
+  vertical-align: top;
+}
+#abstract+p {
+  font-size: 18px;
+  line-height: 24px;
+}
+#abstract+p code, #abstract+p samp, #abstract+p tt {
+  font-size: 16px;
+  line-height: 0;
+}
+
+p {
+  padding: 0;
+  margin: 0.5em 0;
+  text-align: left;
+}
+div {
+  margin: 0;
+}
+.alignRight.art-text {
+  background-color: var(--highlight-color);
+  border: 1px solid var(--line-color);
+  border-radius: 3px;
+  padding: 0.5em 1em 0;
+  margin-bottom: 0.5em;
+}
+.alignRight.art-text pre {
+  padding: 0;
+  width: auto;
+}
+.alignRight {
+  margin: 1em 0;
+}
+.alignRight > *:first-child {
+  border: none;
+  margin: 0;
+  float: right;
+  clear: both;
+}
+.alignRight > *:nth-child(2) {
+  clear: both;
+  display: block;
+  border: none;
+}
+svg {
+  display: block;
+}
+/* font-family isn't space-separated, but =~ will have to do */
+svg[font-family~="monospace" i], svg [font-family~="monospace" i] {
+  font-family: var(--font-mono);
+}
+.alignCenter.art-text {
+  background-color: var(--highlight-color);
+  border: 1px solid var(--line-color);
+  border-radius: 3px;
+  padding: 0.5em 1em 0;
+  margin-bottom: 0.5em;
+}
+.alignCenter.art-text pre {
+  padding: 0;
+  width: auto;
+}
+.alignCenter {
+  margin: 1em 0;
+}
+.alignCenter > *:first-child {
+  border: none;
+  /* this isn't optimal, but it's an existence proof.  PrinceXML doesn't
+     support flexbox yet.
+  */
+  display: table;
+  margin: 0 auto;
+}
+
+/* lists */
+ol, ul {
+  padding: 0;
+  margin: 0 0 0.5em 2em;
+  & :is(ol, ul) {
+    margin-left: 1em;
+  }
+}
+li {
+  margin: 0 0 0.25em 0;
+}
+ul.empty, .ulEmpty {
+  list-style-type: none;
+  & li {
+    margin-top: 0.5em;
+  }
+}
+:is(ul, ol).compact, .ulCompact, .olCompact {
+  margin: 0 0 0 2em;
+  & li {
+    margin: 0;
+    & :first-child { margin-top: 0; }
+    & :last-child { margin-bottom: 0; }
+  }
+}
+
+/* definition lists */
+dl {
+  clear: left;
+  --indent: 3ch;
+  /* --indent: attr(indent ch); not supported in any browser, but we can dream */
+  &.olPercent {
+    --indent: 5ch;
+    & > dt {
+      min-width: calc(var(--indent) - 2ch);
+    }
+  }
+  &.olPercent > dt {
+    float: none;
+  }
+
+  dl > dd > & {
+    margin-top: 0.5em;
+    margin-bottom: 0;
+  }
+}
+dl:not(.dlNewline) > dt {
+  float: left;
+  margin-right: 2ch;
+  min-width: 8ch;
+}
+dl > dd {
+  margin-bottom: .8em;
+  margin-left: var(--indent) !important; /* stupid element overrides */
+  min-height: 2ex;
+}
+:is(dl.compact, .dlCompact) > dd {
+  margin-bottom: 0;
+  & > :is(:first-child, .break:first-child + *) {
+    margin-top: 0;
+  }
+  & > :is(:last-child) {
+    margin-bottom: 0;
+  }
+}
+:is(dd, span).break {
+  display: none;
+}
+
+/* links */
+a, a[href].selfRef:hover {
+  text-decoration: none;
+}
+a[href] {
+  color: var(--link-color);
+}
+a[href].selfRef, .iref + a[href].internal {
+  color: var(--text-color);
+}
+a[href]:hover {
+  text-decoration: underline;
+}
+a[href].selfRef:hover {
+  background-color: var(--highlight-color);
+}
+a.xref:is(.cite, .auto), :is(#status-of-memo, #copyright) a {
+  white-space: nowrap;
+}
+
+/* Figures */
+tt, code, pre {
+  background-color: var(--highlight-color);
+  font: 14px/22px var(--font-mono);
+}
+tt, code {
+  /* changing the font for inline elements leads to different ascender
+     and descender heights; as we want to retain baseline alignment,
+     remove leading to avoid altering the final height of lines
+     note: this fails if these blocks take an entire line,
+     a different solution would be great */
+  line-height: 0;
+}
+:is(h1, h2, h3, h4, h5, h6) :is(tt, code) {
+  font-size: 84%;
+}
+pre {
+  border: 1px solid var(--line-color);
+  font-size: 13.5px;
+  line-height: 16px;
+  letter-spacing: -0.2px;
+  margin: 5px;
+  padding: 5px;
+}
+img {
+  max-width: 100%;
+}
+figure {
+  margin: 0.5em 0;
+  padding: 0;
+}
+figure blockquote {
+  margin: 0.8em 0.4em 0.4em;
+}
+figcaption, caption {
+  font-style: italic;
+  margin: 0.5em 1.5em;
+  text-align: left;
+  caption-side: bottom;
+}
+@media screen {
+  /* Auto-collapse boilerplate. */
+  :is(#status-of-memo, #copyright) p {
+    margin: -2px 0;
+    max-height: 0;
+    transition: max-height 2s ease, margin 0.5s ease 0.5s;
+    overflow: hidden;
+  }
+  :is(#status-of-memo, #copyright):hover p,
+  :is(#status-of-memo, #copyright) h2:target ~ p {
+    margin: 0.5em 0;
+    max-height: 500px;
+    overflow: auto;
+  }
+  pre, svg {
+    display: inline-block;
+    /* In the horizontal direction, sometimes people make over-sized figures.
+       Scrollbars for those is therefore necessary: auto adds them as necessary..
+       In the vertical direction, the line-height can combine with the font
+       asender/descender height to produce scrollbars: hidden avoids that. */
+    overflow: auto hidden;
+  }
+  pre {
+    max-width: 100%;
+    width: calc(100% - 22px - 1em);
+  }
+  svg {
+    max-width: calc(100% - 22px - 1em);
+  }
+  figure pre {
+    display: block;
+    width: calc(100% - 25px);
+  }
+  :is(pre, svg) + .pilcrow {
+    display: inline-block;
+    vertical-align: text-bottom;
+    padding-bottom: 8px;
+  }
+}
+
+/* aside, blockquote */
+aside, blockquote {
+  margin-left: 0;
+  padding: 0 2em;
+  font-style: italic;
+}
+blockquote {
+  margin: 1em 0;
+}
+cite {
+  display: block;
+  text-align: right;
+  font-style: italic;
+}
+
+/* tables */
+table {
+  width: auto;
+  max-width: 100%;
+  margin: 0 0 1em;
+  border-collapse: collapse;
+}
+table.right {
+  margin-left: auto;
+}
+table.center {
+  margin-left: auto;
+  margin-right: auto;
+}
+table.left {
+  margin-right: auto;
+}
+table .text-left {
+  text-align: left;
+}
+table .text-center {
+  text-align: center;
+}
+table .text-right {
+  text-align: right;
+}
+
+thead, tbody {
+  border: 1px solid var(--line-color);
+}
+th, td {
+  text-align: left;
+  vertical-align: top;
+  padding: 5px 10px;
+}
+th {
+  background-color: var(--line-color);
+}
+:is(tr:nth-child(2n), thead+tbody > tr:nth-child(2n+1)) > td {
+  background-color: var(--background-color);
+}
+:is(tr:nth-child(2n+1), thead+tbody > tr:nth-child(2n)) > td {
+  background-color: var(--highlight-color);
+}
+table caption {
+  margin: 0;
+  padding: 3px 0 3px 1em;
+}
+table p {
+  margin: 0;
+}
+
+/* pilcrow */
+a.pilcrow {
+  margin-left: 3px;
+  opacity: 0.2;
+  user-select: none;
+  &[href] {
+    color: var(--pilcrow-weak);
+    &:hover { text-decoration: none; }
+  }
+}
+@media not print {
+  :hover > a.pilcrow {
+    opacity: 1;
+  }
+  a.pilcrow[href]:hover {
+    color: var(--pilcrow-strong);
+    background-color: transparent;
+  }
+}
+@media print {
+  a.pilcrow {
+    display: none;
+  }
+}
+
+/* misc */
+hr {
+  border: 0;
+  border-top: 1px solid var(--line-color);
+}
+.bcp14 {
+  font-variant: small-caps;
+  font-weight: 600;
+  font-size: var(--small-font-size);
+}
+.role {
+  font-variant: all-small-caps;
+}
+sub, sup {
+  line-height: 1;
+  font-size: 80%;
+}
+
+/* info block */
+#identifiers {
+  margin: 0;
+  font-size: var(--small-font-size);
+  line-height: 18px;
+  --identifier-width: 15ch;
+  & dt {
+    width: var(--identifier-width);
+    min-width: var(--identifier-width);
+    clear: left;
+    float: left;
+    text-align: right;
+    margin-right: 1ch;
+  }
+  & dd {
+    margin: 0;
+    margin-left: calc(1em + var(--identifier-width)) !important;
+    min-width: 5em;
+  }
+  & .authors {
+    & .author {
+      display: inline-block;
+      margin-right: 1.5em;
+    }
+    & .org {
+      font-style: italic;
+    }
+  }
+}
+
+/* The prepared/rendered info at the very bottom of the page */
+.docInfo {
+  color: #999;
+  font-size: 0.9em;
+  font-style: italic;
+  margin-top: 2em;
+}
+.docInfo .prepared {
+  float: right;
+}
+
+/* table of contents */
+#toc {
+  padding: 0.75em 0 2em 0;
+  margin-bottom: 1em;
+
+  & nav {
+    & ul {
+      margin: 0 0.5em 0 0;
+      padding: 0;
+      list-style: none;
+    }
+    & li {
+      line-height: 1.3em;
+      margin: 2px 0;
+      padding-left: 1.2em;
+      text-indent: -1.2em;
+    }
+  }
+  & a.xref {
+    white-space: normal;
+  }
+}
+
+.references {
+  & > dt {
+    text-align: right;
+    font-weight: bold;
+    min-width: 10ch;
+    margin-right: 1.5ch;
+    &:target::before {
+      content: "⇒";
+      margin: 0 10px 0 -25px;
+    }
+  }
+  & > dd {
+    margin-left: 12ch !important;
+    overflow: visible;
+    & .refInstance {
+      margin-bottom: 0.8em;
+    }
+    & .ascii {
+      margin-bottom: 0.25em;
+    }
+  }
+}
+
+#rfc\.index\.index + ul {
+  margin-left: 0;
+}
+
+/* authors */
+address.vcard {
+  font-style: normal;
+  max-width: 20em;
+  margin: 1em auto 1em 0;
+
+  & .nameRole {
+    font-weight: 700;
+    margin-left: 0;
+  }
+  & .label {
+    margin: 0.5em 0;
+  }
+  & .type {
+    display: none;
+  }
+  & .alternative-contact {
+    margin: 0.5em 0 0.25em 0;
+  }
+  & .non-ascii {
+    margin: 0 0 0 2em;
+  }
+  & div.left {
+    text-align: left;
+  }
+  & div.right {
+    text-align: right;
+  }
+}
+
+hr.addr {
+  border-top: 1px dashed;
+  margin: 0;
+  color: #ddd;
+  max-width: calc(100% - 16px);
+}
+@media (min-width: 500px) {
+  #authors-addresses > section {
+    column-count: 2;
+    column-gap: 20px;
+  }
+  #authors-addresses > section > h2 {
+    column-span: all;
+  }
+  /* hack for break-inside: avoid-column */
+  #authors-addresses address {
+    display: inline-block;
+    break-inside: avoid-column;
+  }
+}
+
+/* Comments */
+.rfcEditorRemove p:first-of-type {
+  font-style: italic;
+}
+.cref {
+  background-color: rgba(249, 232, 105, 0.3);
+  padding: 2px 4px;
+}
+.crefSource {
+  font-style: italic;
+}
+
+@media screen {
+  #toc nav {
+    font-family: var(--font-title);
+    font-weight: 360;
+    & > ul { margin-bottom: 2em; }
+    & ul {
+      margin: 0 0 0 4px;
+      & :is(p, li) {
+        margin: 2px 0;
+      }
+    }
+  }
+  #toc a.toplink {
+    float: right;
+  }
+}
+@media not screen {
+  #toc a.toplink {
+    display: none;
+  }
+}
+
+
+/* TOC layout for smaller screens */
+@media screen and (max-width: 929px) {
+  #toc {
+    position: fixed;
+    z-index: 2;
+    top: 0;
+    right: 0;
+    padding: 1px 0 0 0;
+    margin: 0;
+    border-bottom: 1px solid #ccc;
+    opacity: 0.6;
+  }
+  #toc h2 {
+    margin: 0;
+    padding: 2px 0 2px 6px;
+    padding-right: 1em;
+    font-size: 18px;
+    line-height: 24px;
+    min-width: 190px;
+    text-align: right;
+    background-color: #444;
+    color: white;
+    cursor: pointer;
+    &::before { /* css hamburger */
+      float: right;
+      position: relative;
+      width: 1em;
+      height: 1px;
+      left: -164px;
+      margin: 8px 0 0 0;
+      background: white none repeat scroll 0 0;
+      box-shadow: 0 4px 0 0 white, 0 8px 0 0 white;
+      content: "";
+    }
+  }
+  #toc nav {
+    display: none;
+    background-color: var(--background-color);
+    padding: 0.5em 1em 1em;
+    overflow: auto;
+    overscroll-behavior: contain;
+    height: calc(100vh - 48px);
+    border-left: 1px solid #ddd;
+  }
+  #toc.active {
+    opacity: 1;
+    & nav { display: block; }
+  }
+  /* Make the collapsed ToC header render white on gray also when it's a link */
+  #toc h2 a,
+  #toc h2 a:is(:link, :focus, :hover),
+  #toc a.toplink,
+  #toc a.toplink:hover {
+    color: white;
+    background-color: #444;
+    text-decoration: none;
+  }
+  #toc a.toplink {
+    margin: 2px 0.5em 0;
+  }
+}
+
+/* TOC layout for wide screens */
+@media screen and (min-width: 930px) {
+  body {
+    padding-right: 360px;
+    padding-right: calc(min(180px + 20%, 500px));
+  }
+  #toc {
+    position: fixed;
+    bottom: 0;
+    right: 0;
+    right: calc(50vw - 480px);
+    width: 312px;
+    margin: 0;
+    padding: 0;
+    z-index: 1;
+  }
+  #toc h2 {
+    margin: 0;
+    padding: 0.25em 1em 1em 0;
+  }
+  #toc nav {
+    display: block;
+    height: calc(90vh - 84px);
+    bottom: 0;
+    padding: 0.5em 0 2em;
+    overflow: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+  }
+  img { /* future proofing */
+    max-width: 100%;
+    height: auto;
+  }
+  #toc a.toplink {
+    margin: 8px 0.5em 0;
+  }
+}
+
+/* pagination */
+@media print {
+  body {
+    width: 100%;
+  }
+  p {
+    orphans: 3;
+    widows: 3;
+  }
+  #n-copyright-notice {
+    border-bottom: none;
+  }
+  #toc, #n-introduction {
+    page-break-before: always;
+  }
+  #toc {
+    border-top: none;
+    padding-top: 0;
+  }
+  figure, pre, .vcard {
+    page-break-inside: avoid;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+  }
+  :is(h2, h3, h4, h5, h6)+*, dd {
+    page-break-before: avoid;
+  }
+  pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 10pt;
+  }
+  table {
+    border: 1px solid #ddd;
+  }
+  td {
+    border-top: 1px solid #ddd;
+  }
+}
+
+@page :first {
+  padding-top: 0;
+  @top-left {
+    content: normal;
+    border: none;
+  }
+  @top-center {
+    content: normal;
+    border: none;
+  }
+  @top-right {
+    content: normal;
+    border: none;
+  }
+}
+
+@page {
+  size: A4;
+  margin-bottom: 45mm;
+  padding-top: 20px;
+}
+
+/* Dark mode. */
+@media (prefers-color-scheme: dark) {
+:root {
+  --background-color: #121212;
+  --text-color: #f0f0f0;
+  --title-color: #fff;
+  --link-color: #4da4f0;
+  --highlight-color: #282828;
+  --line-color: #444;
+  --pilcrow-weak: #444;
+  --pilcrow-strong: #666;
+  scrollbar-color: #777 #333;
+}
+}
+
+/* SVG Trick: a prefix match works because only black and white are allowed */
+svg :is([stroke="black"], [stroke^="#000"]) {
+  stroke: var(--text-color);
+}
+svg :is([stroke="white"], [stroke^="#fff"]) {
+  stroke: var(--background-color);
+}
+svg :is([fill="black"], [fill^="#000"], :not([fill])) {
+  fill: var(--text-color);
+}
+svg :is([fill="white"], [fill^="#fff"]) {
+  fill: var(--background-color);
+}
+</style>
+
+</head>
+<body class="xml2rfc">
+<table class="ears">
+<thead><tr>
+<td class="left">Internet-Draft</td>
+<td class="center">DMLS</td>
+<td class="right">October 2025</td>
+</tr></thead>
+<tfoot><tr>
+<td class="left">Xue, et al.</td>
+<td class="center">Expires 23 April 2026</td>
+<td class="right">[Page]</td>
+</tr></tfoot>
+</table>
+<div id="external-metadata" class="document-information"></div>
+<div id="internal-metadata" class="document-information">
+<dl id="identifiers">
+<dt class="label-workgroup">Workgroup:</dt>
+<dd class="workgroup">Messaging Layer Security</dd>
+<dt class="label-internet-draft">Internet-Draft:</dt>
+<dd class="internet-draft">draft-xue-distributed-mls-latest</dd>
+<dt class="label-published">Published:</dt>
+<dd class="published">
+<time datetime="2025-10-20" class="published">20 October 2025</time>
+    </dd>
+<dt class="label-intended-status">Intended Status:</dt>
+<dd class="intended-status">Informational</dd>
+<dt class="label-expires">Expires:</dt>
+<dd class="expires"><time datetime="2026-04-23">23 April 2026</time></dd>
+<dt class="label-authors">Authors:</dt>
+<dd class="authors">
+<div class="author">
+      <div class="author-name">M. Xue</div>
+<div class="org">Germ Network, Inc.</div>
+</div>
+<div class="author">
+      <div class="author-name">J. W. Lukefahr</div>
+<div class="org">US Naval Postgraduate School</div>
+</div>
+<div class="author">
+      <div class="author-name">B. Hale</div>
+<div class="org">US Naval Postgraduate School</div>
+</div>
+</dd>
+</dl>
+</div>
+<h1 id="title">Distributed MLS</h1>
+<section id="section-abstract">
+      <h2 id="abstract"><a href="#abstract" class="selfRef">Abstract</a></h2>
+<p id="section-abstract-1">The Messaging Layer Security (MLS) protocol enables a group of participants to
+negotiate a common cryptographic state for messaging, providing Forward
+Secrecy (FS) and Post-Compromise Security (PCS). Still, there are some use cases
+where message ordering challenges may make it difficult for a group of
+participants to agree on a common state or use cases where reaching eventual
+consistency is impractical for the application. This document describes
+Distributed-MLS (DMLS), a composition protocol for using MLS sessions to protect
+messages among participants without negotiating a common group state.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
+</section>
+<section class="note rfcEditorRemove" id="section-note.1">
+      <h2 id="name-about-this-document">
+<a href="#name-about-this-document" class="section-name selfRef">About This Document</a>
+      </h2>
+<p id="section-note.1-1">This note is to be removed before publishing as an RFC.<a href="#section-note.1-1" class="pilcrow">¶</a></p>
+<p id="section-note.1-2">
+        The latest revision of this draft can be found at <span><a href="https://germ-mark.github.io/distributed-mls-id/draft-xue-distributed-mls.html">https://germ-mark.github.io/distributed-mls-id/draft-xue-distributed-mls.html</a></span>.
+        Status information for this document may be found at <span><a href="https://datatracker.ietf.org/doc/draft-xue-distributed-mls/">https://datatracker.ietf.org/doc/draft-xue-distributed-mls/</a></span>.<a href="#section-note.1-2" class="pilcrow">¶</a></p>
+<p id="section-note.1-3">
+        Discussion of this document takes place on the
+        Messaging Layer Security Working Group mailing list (<span><a href="mailto:mls@ietf.org">mailto:mls@ietf.org</a></span>),
+        which is archived at <span><a href="https://mailarchive.ietf.org/arch/browse/mls/">https://mailarchive.ietf.org/arch/browse/mls/</a></span>.
+        Subscribe at <span><a href="https://www.ietf.org/mailman/listinfo/mls/">https://www.ietf.org/mailman/listinfo/mls/</a></span>.<a href="#section-note.1-3" class="pilcrow">¶</a></p>
+<p id="section-note.1-4">Source for this draft and an issue tracker can be found at
+        <span><a href="https://github.com/germ-mark/distributed-mls-id">https://github.com/germ-mark/distributed-mls-id</a></span>.<a href="#section-note.1-4" class="pilcrow">¶</a></p>
+</section>
+<div id="status-of-memo">
+<section id="section-boilerplate.1">
+        <h2 id="name-status-of-this-memo">
+<a href="#name-status-of-this-memo" class="section-name selfRef">Status of This Memo</a>
+        </h2>
+<p id="section-boilerplate.1-1">
+        This Internet-Draft is submitted in full conformance with the
+        provisions of BCP 78 and BCP 79.<a href="#section-boilerplate.1-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-2">
+        Internet-Drafts are working documents of the Internet Engineering Task
+        Force (IETF). Note that other groups may also distribute working
+        documents as Internet-Drafts. The list of current Internet-Drafts is
+        at <span><a href="https://datatracker.ietf.org/drafts/current/">https://datatracker.ietf.org/drafts/current/</a></span>.<a href="#section-boilerplate.1-2" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-3">
+        Internet-Drafts are draft documents valid for a maximum of six months
+        and may be updated, replaced, or obsoleted by other documents at any
+        time. It is inappropriate to use Internet-Drafts as reference
+        material or to cite them other than as "work in progress."<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-4">
+        This Internet-Draft will expire on 23 April 2026.<a href="#section-boilerplate.1-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="copyright">
+<section id="section-boilerplate.2">
+        <h2 id="name-copyright-notice">
+<a href="#name-copyright-notice" class="section-name selfRef">Copyright Notice</a>
+        </h2>
+<p id="section-boilerplate.2-1">
+            Copyright (c) 2025 IETF Trust and the persons identified as the
+            document authors. All rights reserved.<a href="#section-boilerplate.2-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.2-2">
+            This document is subject to BCP 78 and the IETF Trust's Legal
+            Provisions Relating to IETF Documents
+            (<span><a href="https://trustee.ietf.org/license-info">https://trustee.ietf.org/license-info</a></span>) in effect on the date of
+            publication of this document. Please review these documents
+            carefully, as they describe your rights and restrictions with
+            respect to this document. Code Components extracted from this
+            document must include Revised BSD License text as described in
+            Section 4.e of the Trust Legal Provisions and are provided without
+            warranty as described in the Revised BSD License.<a href="#section-boilerplate.2-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="toc">
+<section id="section-toc.1">
+        <a href="#" onclick="scroll(0,0)" class="toplink">▲</a><h2 id="name-table-of-contents">
+<a href="#name-table-of-contents" class="section-name selfRef">Table of Contents</a>
+        </h2>
+<nav class="toc"><ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1">
+            <p id="section-toc.1-1.1.1"><a href="#section-1" class="auto internal xref">1</a>.  <a href="#name-introduction" class="internal xref">Introduction</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1.2.1">
+                <p id="section-toc.1-1.1.2.1.1" class="keepWithNext"><a href="#section-1.1" class="auto internal xref">1.1</a>.  <a href="#name-terminology" class="internal xref">Terminology</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1.2.2">
+                <p id="section-toc.1-1.1.2.2.1" class="keepWithNext"><a href="#section-1.2" class="auto internal xref">1.2</a>.  <a href="#name-protocol-overview" class="internal xref">Protocol Overview</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1.2.3">
+                <p id="section-toc.1-1.1.2.3.1" class="keepWithNext"><a href="#section-1.3" class="auto internal xref">1.3</a>.  <a href="#name-meeting-mls-delivery-servic" class="internal xref">Meeting MLS Delivery Service Requirements</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2">
+            <p id="section-toc.1-1.2.1"><a href="#section-2" class="auto internal xref">2</a>.  <a href="#name-send-group-operation" class="internal xref">Send Group Operation</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3">
+            <p id="section-toc.1-1.3.1"><a href="#section-3" class="auto internal xref">3</a>.  <a href="#name-group-operations" class="internal xref">Group Operations</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.1">
+                <p id="section-toc.1-1.3.2.1.1"><a href="#section-3.1" class="auto internal xref">3.1</a>.  <a href="#name-init" class="internal xref">INIT</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.1.2.1">
+                    <p id="section-toc.1-1.3.2.1.2.1.1"><a href="#section-3.1.1" class="auto internal xref">3.1.1</a>.  <a href="#name-over-the-wire-definition" class="internal xref">Over the wire definition</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.1.2.2">
+                    <p id="section-toc.1-1.3.2.1.2.2.1"><a href="#section-3.1.2" class="auto internal xref">3.1.2</a>.  <a href="#name-application-directed-defini" class="internal xref">Application-directed definition</a></p>
+</li>
+                </ul>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.2">
+                <p id="section-toc.1-1.3.2.2.1"><a href="#section-3.2" class="auto internal xref">3.2</a>.  <a href="#name-update" class="internal xref">UPDATE</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.3">
+                <p id="section-toc.1-1.3.2.3.1"><a href="#section-3.3" class="auto internal xref">3.3</a>.  <a href="#name-commit" class="internal xref">COMMIT</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.4">
+                <p id="section-toc.1-1.3.2.4.1"><a href="#section-3.4" class="auto internal xref">3.4</a>.  <a href="#name-leaf-node-update" class="internal xref">LEAF NODE UPDATE</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.5">
+                <p id="section-toc.1-1.3.2.5.1"><a href="#section-3.5" class="auto internal xref">3.5</a>.  <a href="#name-protect" class="internal xref">PROTECT</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.6">
+                <p id="section-toc.1-1.3.2.6.1"><a href="#section-3.6" class="auto internal xref">3.6</a>.  <a href="#name-unprotect" class="internal xref">UNPROTECT</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4">
+            <p id="section-toc.1-1.4.1"><a href="#section-4" class="auto internal xref">4</a>.  <a href="#name-dmls-requirements" class="internal xref">DMLS Requirements</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5">
+            <p id="section-toc.1-1.5.1"><a href="#section-5" class="auto internal xref">5</a>.  <a href="#name-wire-formats" class="internal xref">Wire Formats</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6">
+            <p id="section-toc.1-1.6.1"><a href="#section-6" class="auto internal xref">6</a>.  <a href="#name-conventions-and-definitions" class="internal xref">Conventions and Definitions</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7">
+            <p id="section-toc.1-1.7.1"><a href="#section-7" class="auto internal xref">7</a>.  <a href="#name-security-considerations" class="internal xref">Security Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8">
+            <p id="section-toc.1-1.8.1"><a href="#section-8" class="auto internal xref">8</a>.  <a href="#name-iana-considerations" class="internal xref">IANA Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9">
+            <p id="section-toc.1-1.9.1"><a href="#section-9" class="auto internal xref">9</a>.  <a href="#name-references" class="internal xref">References</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10">
+            <p id="section-toc.1-1.10.1"><a href="#section-10" class="auto internal xref">10</a>. <a href="#name-normative-references" class="internal xref">Normative References</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11">
+            <p id="section-toc.1-1.11.1"><a href="#appendix-A" class="auto internal xref"></a><a href="#name-acknowledgments" class="internal xref">Acknowledgments</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.12">
+            <p id="section-toc.1-1.12.1"><a href="#appendix-B" class="auto internal xref"></a><a href="#name-authors-addresses" class="internal xref">Authors' Addresses</a></p>
+</li>
+        </ul>
+</nav>
+</section>
+</div>
+<div id="introduction">
+<section id="section-1">
+      <h2 id="name-introduction">
+<a href="#section-1" class="section-number selfRef">1. </a><a href="#name-introduction" class="section-name selfRef">Introduction</a>
+      </h2>
+<p id="section-1-1">Participants operating in peer-to-peer or partitioned network topologies
+may find it impractical to access a centralized Delivery Service (DS), or reach
+consensus on message sequencing to arrive at a consistent Commit for each
+MLS epoch.<a href="#section-1-1" class="pilcrow">¶</a></p>
+<p id="section-1-2">DMLS is an composition or 'super'-group for facilitating group messaging in
+such use cases that uses MLS as a 'sub' protocol. It instantiates an MLS session
+per participant, such that each participant acts as the 'owner' of its own group.
+These sub-groups also act as 'Send Groups', in which the owner sends all of their
+application messages and determines the ordering of Proposals and Commits. This
+allows each participant to locally and independently control the sequence
+of update processing and encrypt messages using MLS accordingingly. A distributed
+group (DGroup) using DMLS then comprises the communication superset of such Send
+Groups.  This draft further addresses how to incorporate randomness from other
+participants' 'Send Groups' to ensure post-compromise security (PCS) is maintained
+across the superset.<a href="#section-1-2" class="pilcrow">¶</a></p>
+<div id="terminology">
+<section id="section-1.1">
+        <h3 id="name-terminology">
+<a href="#section-1.1" class="section-number selfRef">1.1. </a><a href="#name-terminology" class="section-name selfRef">Terminology</a>
+        </h3>
+<p id="section-1.1-1">Send Group: An MLS session where one designated senber (the group 'owner') authors
+all messages and other members use the group only to receive from the designated
+sender.<a href="#section-1.1-1" class="pilcrow">¶</a></p>
+<p id="section-1.1-2">DGroup: the set of communication participants, i.e., the superset of all associated
+Send Groups.<a href="#section-1.1-2" class="pilcrow">¶</a></p>
+<p id="section-1.1-3">DMembers: Members of the DGroup participating in the DMLS session, each as the
+owner of a Send Group.<a href="#section-1.1-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="protocol-overview">
+<section id="section-1.2">
+        <h3 id="name-protocol-overview">
+<a href="#section-1.2" class="section-number selfRef">1.2. </a><a href="#name-protocol-overview" class="section-name selfRef">Protocol Overview</a>
+        </h3>
+<p id="section-1.2-1">Within a group distributed DMember participants, we can resolve state conflict
+by assigning each member local state that only they control. In DMLS, we assign
+to each DMember ownership of an MLS group that they then operate as a Send Group.
+The Send Group owner can export secrets from other groups owned by DMembers and
+import such secrets as added randomness into their own Send Group through use of
+epochal Proposal messages. This enables each Send Group to include entropy from
+other receive-only members of their Send Group, providing for both PCS and FS
+without the need to reach global consensus on ordering of updates.<a href="#section-1.2-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="meeting-mls-delivery-service-requirements">
+<section id="section-1.3">
+        <h3 id="name-meeting-mls-delivery-servic">
+<a href="#section-1.3" class="section-number selfRef">1.3. </a><a href="#name-meeting-mls-delivery-servic" class="section-name selfRef">Meeting MLS Delivery Service Requirements</a>
+        </h3>
+<p id="section-1.3-1">The MLS Architecture Guide specifies two requirements for an abstract Delivery
+Service related to message ordering. First, Proposal messages should all arrive
+before the Commit that references them. Second, members of an MLS group must agree
+on a single MLS Commit message that ends each epoch and begins the next one.<a href="#section-1.3-1" class="pilcrow">¶</a></p>
+<p id="section-1.3-2">An honest centralized DS, in the form of a message queuing server or content
+distribution network, can guarantee these requirements to be met. By controlling
+the order of messages delivered to MLS participants, for example, it can guarantee
+that Commit messages always follow their associated Proposal messages. By filtering
+Commit messages based on some pre-determined criteria, it can ensure that only a
+single Commit message per epoch is delivered to participants.<a href="#section-1.3-2" class="pilcrow">¶</a></p>
+<p id="section-1.3-3">A decentralized DS, on the other hand, can take the form of a message queuing
+server without specialized logic for handling MLS messages, a mesh network, or,
+perhaps, simply a local area network. These DS instantiations cannot offer any such
+guarantees.<a href="#section-1.3-3" class="pilcrow">¶</a></p>
+<p id="section-1.3-4">The MLS Architecture Guide highlights the risk of two MLS members generating
+different Commits in the same epoch and then sending them at the same time. The impact
+of this risk is inconsistency or forking of MLS group state among members, which in
+turn risks authorized members being unable to read each other's messages. A
+decentralized DS offers no mitigation strategy for this risk, so the members themselves
+must agree on strategies, or in our terminology, operating constraints. We could say in
+such cases that the full weight of the CAP theorem is therefor levied directly on the
+MLS members. However, use cases exist that benefit from, or even necessitate, MLS and
+its accompanying security guarantees for distributed group communications.<a href="#section-1.3-4" class="pilcrow">¶</a></p>
+<p id="section-1.3-5">The DMLS operating constraints specified above allow honest members to form a
+distributed system that satisfies these requirements despite a decentralized DS.
+Moreover, instead of mitigating or providing methods for resolving Commit collisions,
+it effectively eliminates any risk of them occuring. It also, consequently removes the
+risk of insider state desyncronization attacks, as an insider (a DMember) can only
+control state in their own Send Group. The Send Group methodology ensures that a
+single owner controls the Send sequence in their own group, including both application
+messages and Commits. As a potential functional benefit in some use cases, DMLS further
+enables flexibility in receive-only modes, namely that any DiMember can continue to
+receive messages sent from other groups, even if not sending information themselves.<a href="#section-1.3-5" class="pilcrow">¶</a></p>
+<p id="section-1.3-6">Downsides of the DMLS design that may make it not suitable for all settings include
+increased overhead, namely due to the fact that within any Send Group, intermediate
+nodes along the parent path of any non-owner remain blank. While the owner path updates
+when it Commits and other leaf nodes can be updated as explained later, the parent path
+of the other leaf nodes is not filled in. Thus DMLS comes with functional trade-offs.<a href="#section-1.3-6" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="send-group-operation">
+<section id="section-2">
+      <h2 id="name-send-group-operation">
+<a href="#section-2" class="section-number selfRef">2. </a><a href="#name-send-group-operation" class="section-name selfRef">Send Group Operation</a>
+      </h2>
+<p id="section-2-1">A DMLS Send Group operates in the following way:
+  * The creator of the group, occupying leaf index 0, is the designated owner of the Send
+    Group
+  * Other members only accept messages from the owner
+  * Members only accept messages as defined in Group Operations
+  * Each group owner updates their contribution to the group with a full or empty Commit.
+    To incorporate fresh keying material inputs from another member, the group owner
+    creates an exporter key from the other member's Send Group and imports the PSK into
+    its own Send Group using a PSK Proposal.<a href="#section-2-1" class="pilcrow">¶</a></p>
+<p id="section-2-2">To facilitate binding Send Groups together, we define the following exported values:
+   * derived groupid: <code>MLS-Exporter("derivedGroupId", leafNodePublicSigningKey, Length)</code><a href="#section-2-2" class="pilcrow">¶</a></p>
+<div class="alignLeft art-text artwork" id="section-2-3">
+<pre>
+  This is a unique value for each participant derived from the group's current epoch    * exportPSK: `MLS-Exporter("exporter-psk", "psk_id", KDF.Nh)`
+</pre><a href="#section-2-3" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+<div id="group-operations">
+<section id="section-3">
+      <h2 id="name-group-operations">
+<a href="#section-3" class="section-number selfRef">3. </a><a href="#name-group-operations" class="section-name selfRef">Group Operations</a>
+      </h2>
+<p id="section-3-1">Similar to MLS, DMLS provides a participant application programming interface (API)
+with the following functions:<a href="#section-3-1" class="pilcrow">¶</a></p>
+<div id="init">
+<section id="section-3.1">
+        <h3 id="name-init">
+<a href="#section-3.1" class="section-number selfRef">3.1. </a><a href="#name-init" class="section-name selfRef">INIT</a>
+        </h3>
+<p id="section-3.1-1">Given a list of DMLS participants, DMembers, initialize an DMLS context by (1) creating
+an MLS group, (2) adding all other DMemebers (generating a set of Welcome messages and a
+GroupInfo message). It is the responsibility of a DMLS implementation to define the
+DMembers and the mechanism of generating the individual Send Groups.
+Two possible approaches are described below.<a href="#section-3.1-1" class="pilcrow">¶</a></p>
+<div id="over-the-wire-definition">
+<section id="section-3.1.1">
+          <h4 id="name-over-the-wire-definition">
+<a href="#section-3.1.1" class="section-number selfRef">3.1.1. </a><a href="#name-over-the-wire-definition" class="section-name selfRef">Over the wire definition</a>
+          </h4>
+<p id="section-3.1.1-1">For example, the DGroup can be defined over the wire by inferring it from a newly created
+Send Group.<a href="#section-3.1.1-1" class="pilcrow">¶</a></p>
+<p id="section-3.1.1-2">Assume Alice has keypackages for some other DMembers $M_i$<a href="#section-3.1.1-2" class="pilcrow">¶</a></p>
+<p id="section-3.1.1-3">Alice can construct a DGroup
+   * with a randomly generated groupId
+   * constructing a Commit adding all other DMembers $M_i$<a href="#section-3.1.1-3" class="pilcrow">¶</a></p>
+<p id="section-3.1.1-4">Alice can distribute the Welcome message with an Application Message that indicates
+   * this is a Send Group for Alice
+   * that defines the set of DMembers as the members of this group
+   * with DMember identifier equal to the groupId for Alice's Send Group
+   * and defines a common export key length<a href="#section-3.1.1-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="application-directed-definition">
+<section id="section-3.1.2">
+          <h4 id="name-application-directed-defini">
+<a href="#section-3.1.2" class="section-number selfRef">3.1.2. </a><a href="#name-application-directed-defini" class="section-name selfRef">Application-directed definition</a>
+          </h4>
+<p id="section-3.1.2-1">The DGroup set of DMembers can also be defined by the application layer, which
+provides each member:
+* keypackages for all other DMembers
+* a random set identifier for the DGroup
+* common export key length<a href="#section-3.1.2-1" class="pilcrow">¶</a></p>
+<p id="section-3.1.2-2">Keypackages can be reusable, e.g., marked as last-resort.
+Keypackages can also be single-use if the application layer retrieves at least $N-1$
+(where $|U|=N$) unique keypackages from each member.<a href="#section-3.1.2-2" class="pilcrow">¶</a></p>
+<p id="section-3.1.2-3">Alice can construct her Send Group:
+* by creating an MLS group with randomly generated groupId
+* and then constructing a Commit and Welcome message adding all other DMembers<a href="#section-3.1.2-3" class="pilcrow">¶</a></p>
+<p id="section-3.1.2-4">With this approach, an additional message is not required as common configuration
+items are provided by the application layer.<a href="#section-3.1.2-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="update">
+<section id="section-3.2">
+        <h3 id="name-update">
+<a href="#section-3.2" class="section-number selfRef">3.2. </a><a href="#name-update" class="section-name selfRef">UPDATE</a>
+        </h3>
+<p id="section-3.2-1">A member Alice of DGroup can introduce new key material to other DMembers by
+authoring a full or empty Commit in Alice's own Send Group, which provides PCS with
+regard to the committer.<a href="#section-3.2-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="commit">
+<section id="section-3.3">
+        <h3 id="name-commit">
+<a href="#section-3.3" class="section-number selfRef">3.3. </a><a href="#name-commit" class="section-name selfRef">COMMIT</a>
+        </h3>
+<p id="section-3.3-1">When Bob receives Alice's DMLS update (as a full or empty Commit in Alice's Send Group),
+Bob can incorporate PCS from Alice's Commit into his own Send Group by importing a PSK
+from Alice's Send Group. Precisely, Bob:
+   * Creates a PSK Proposal in Bob's Send Group using the exportPskId
+      and exportPSK from the epoch of Alice's Send Group after Alice's DMLS update
+   * Bob generates a Commit covering the PSK Proposal
+   * If other DMembers have updated in their respective Send Groups, Bob <span class="bcp14">MAY</span> include
+      more than one PSK Proposal under the Commit in his own Send Group, corresponding
+     to those respective updates.<a href="#section-3.3-1" class="pilcrow">¶</a></p>
+<p id="section-3.3-2">The <code>psk_group_id</code> for this PSK is more specifically defined as follows:
+<code>
+psk_group_id = (opaque&lt;8&gt;) groupEpoch | groupId
+</code>
+where <code>epoch_bytes</code> is the byte-vector representation of the epoch in which the exporter
+was generated, in network byte order. Since epoch is of type <code>uint64</code>, this results in a
+fixed 8-byte vector. <code>groupId</code>, which is of type <code>opaque&lt;V&gt;</code>, is then appended to
+<code>epoch_bytes</code>. When a <code>exportPskId</code> is received as part of an incoming PSK Proposal, it
+can then be processed as follows:
+<code>
+groupId = exportPskId[8..]
+epoch = (uint64) exportPskId[0..7]
+</code><a href="#section-3.3-2" class="pilcrow">¶</a></p>
+<p id="section-3.3-3">Per <span>[<a href="#RFC9420" class="cite xref">RFC9420</a>]</span>, the <code>psk_nonce</code> <span class="bcp14">MUST</span> be a fresh random value of length <code>KDF.Nh</code> when
+the PSK Proposal is generated. This ensures key separation between the PSKs generated,
+for example, by Bob and Charlie as DMembers when extracting PSKs from Alice's Send Group
+for creating Proposals within their own respective Send Groups.<a href="#section-3.3-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="leaf-node-update">
+<section id="section-3.4">
+        <h3 id="name-leaf-node-update">
+<a href="#section-3.4" class="section-number selfRef">3.4. </a><a href="#name-leaf-node-update" class="section-name selfRef">LEAF NODE UPDATE</a>
+        </h3>
+<p id="section-3.4-1">When Bob incporates PCS from Alice's Commit into his own Send Group by importing a PSK
+from Alice's Send Group, it is also critical that the associated leaf node changes are
+also updated in Bob's Send Group.<a href="#section-3.4-1" class="pilcrow">¶</a></p>
+<p id="section-3.4-2">Thus, when Bob creates a <code>psk_group_id</code> as defined above, it directly references a
+specific <code>groupID</code> and <code>epoch</code> from Alice's Send Group, which itself corresponds to the
+current leaf node of Alice for that epoch. When Bob generates a Commit covering the
+PSK Proposal, Bob <span class="bcp14">MUST</span> also update Alice's leaf node within Bob's own Send Group to
+match the leaf node of Alice for the given <code>groupID</code> and <code>epoch</code>. When other DMembers
+receiving messages in Bob's Send Group receive the Commit, they <span class="bcp14">MUST</span> also update their
+tree representations to reflect Alice's leaf node corresponding to the <code>groupID</code> and
+<code>epoch</code>.<a href="#section-3.4-2" class="pilcrow">¶</a></p>
+<p id="section-3.4-3">Alice's leaf node placement in Bob's own MLS tree <span class="bcp14">MAY</span> be different than in Alice' MLS
+tree, and consequently the Alice's update within her own Send Group does not correspond
+to intermediate node updates for Alice's path in Bob's Send Group.
+Only the leaf node is updated.<a href="#section-3.4-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="protect">
+<section id="section-3.5">
+        <h3 id="name-protect">
+<a href="#section-3.5" class="section-number selfRef">3.5. </a><a href="#name-protect" class="section-name selfRef">PROTECT</a>
+        </h3>
+<p id="section-3.5-1">A member Bob protects a ciphertext message and encrypts it to the DMembers by
+encrypting it as an application message in his Send Group, as in MLS. As in MLS,
+before encrypting an application message, Bob <span class="bcp14">SHOULD</span> incorporate any DMLS updates
+of Bob's own or PSK proposals corresponding to updates in other DMember Send Groups
+that he has observed.<a href="#section-3.5-1" class="pilcrow">¶</a></p>
+<p id="section-3.5-2">Each of the 3 MLS configurations of Commit are possible:
+* If Bob has observed no updates but wishes to issue an update, Bob can author
+  an empty Commit.
+If Bob has observed DMLS updates in others' Send Groups,
+* Bob can incorporate those updates without an update of his own with a partial
+  Commit covering PSK Proposals he derives from each of the other updated Send Groups.
+* Alternatively, Bob can incorporate those updates as well as an update of Bob's own
+  by covering those PSK Proposals with a full Commit.<a href="#section-3.5-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="unprotect">
+<section id="section-3.6">
+        <h3 id="name-unprotect">
+<a href="#section-3.6" class="section-number selfRef">3.6. </a><a href="#name-unprotect" class="section-name selfRef">UNPROTECT</a>
+        </h3>
+<p id="section-3.6-1">On receipt of an MLS message, a member can look up the corresponding Send Group
+by the MLS groupId in the message metadata and decrypt it with the keys associated
+with that Send Group.<a href="#section-3.6-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="dmls-requirements">
+<section id="section-4">
+      <h2 id="name-dmls-requirements">
+<a href="#section-4" class="section-number selfRef">4. </a><a href="#name-dmls-requirements" class="section-name selfRef">DMLS Requirements</a>
+      </h2>
+<p id="section-4-1">The application layer over MLS has the responsibility to define
+* The set of DMembers within DGroup for the DMLS session
+* Mapping groupIds to members of DGroup
+* Additional common rules, such as accepted cipher suites<a href="#section-4-1" class="pilcrow">¶</a></p>
+<p id="section-4-2">(Nothing inherently requires the Send Groups to agree on a cipher suite -
+each sender could choose their own, suitable to their own data transmission
+protection requirements, as long as they agree on export key length. It is
+advisable that the application set minimum requirements for all Send Groups
+within the DGroup.)<a href="#section-4-2" class="pilcrow">¶</a></p>
+<p id="section-4-3">The DMLS application <span class="bcp14">SHOULD</span> recommend a policy for issuing DMLS updates.<a href="#section-4-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="wire-formats">
+<section id="section-5">
+      <h2 id="name-wire-formats">
+<a href="#section-5" class="section-number selfRef">5. </a><a href="#name-wire-formats" class="section-name selfRef">Wire Formats</a>
+      </h2>
+<p id="section-5-1">DMLS uses standard wire formats as defined in <span>[<a href="#RFC9420" class="cite xref">RFC9420</a>]</span>.  An application using
+DMLS <span class="bcp14">SHOULD</span> define formats for any additional messages containing common
+configuration or operational parameters.<a href="#section-5-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="conventions-and-definitions">
+<section id="section-6">
+      <h2 id="name-conventions-and-definitions">
+<a href="#section-6" class="section-number selfRef">6. </a><a href="#name-conventions-and-definitions" class="section-name selfRef">Conventions and Definitions</a>
+      </h2>
+<p id="section-6-1">The key words "<span class="bcp14">MUST</span>", "<span class="bcp14">MUST NOT</span>", "<span class="bcp14">REQUIRED</span>", "<span class="bcp14">SHALL</span>", "<span class="bcp14">SHALL NOT</span>", "<span class="bcp14">SHOULD</span>", "<span class="bcp14">SHOULD NOT</span>", "<span class="bcp14">RECOMMENDED</span>", "<span class="bcp14">NOT RECOMMENDED</span>",
+"<span class="bcp14">MAY</span>", and "<span class="bcp14">OPTIONAL</span>" in this document are to be interpreted as
+described in BCP 14 <span>[<a href="#RFC2119" class="cite xref">RFC2119</a>]</span> <span>[<a href="#RFC8174" class="cite xref">RFC8174</a>]</span> when, and only when, they
+appear in all capitals, as shown here.<a href="#section-6-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="security-considerations">
+<section id="section-7">
+      <h2 id="name-security-considerations">
+<a href="#section-7" class="section-number selfRef">7. </a><a href="#name-security-considerations" class="section-name selfRef">Security Considerations</a>
+      </h2>
+<p id="section-7-1">DMLS inherits and matches MLS in most security considerations with one notable
+change to security control nuances. In MLS each group member can largely control
+when their updates will be introduced to the group state, with deconfliction only
+down to the DS. In contrast, in DMLS the Send Group owner controls when key update
+material is included from each member; namely, every member updates in their own
+Send Group and fresh keying material is then imported to other Send Groups through
+use of the exporter key and PSK Proposal option, with timing controlled by the
+respective Send Group owners. This means that while the PCS healing frequency of a
+given member in MLS is under their own control, in DMLS the PCS healing frequency
+and timeliness of PSK import is controlled by the Send Group owner. However, the
+Send Group owner is also the only member sending data in the Send Group. This means
+that there is a natural incentive to update frequently and in a timely manner, and
+that PCS impacts on sending of data are not delayed from the point of original
+update.<a href="#section-7-1" class="pilcrow">¶</a></p>
+<p id="section-7-2">FS guarantees per Send Group follow similarly; the Send Group owner determines the
+frequency of key roll-over.<a href="#section-7-2" class="pilcrow">¶</a></p>
+<p id="section-7-3">Notably, since the Send Group owner determines what is introduced as a PSK from
+other DMembers, it is not possible for an insider threat to disrupt the group state
+and cause desynchronization of the group view. This is unlike in MLS, where all
+contributing parties must behave honestly to avoid state disruption.<a href="#section-7-3" class="pilcrow">¶</a></p>
+<p id="section-7-4">As in MLS, it is essential for PCS security that all members update frequently.
+In MLS, if a member Bob does not receive the update from another member,
+Alice, Bob's state will become desynchronized from the rest of the MLS group,
+leading Bob to be unable to send messages that other group members (which have
+correctly processed Alice's updates) will be able to decrypt and also prevent
+Bob from decrypting messages received by those members. Bob must obtain the missing
+Alice update from the DS. In DMLS, however, the removal of desynchronization risk
+means that Bob will continue to be able to send messages to DMembers in Bob's Send
+Group even if Bob has not yet observed Alice's update. This presents both a benefit
+and a risk, as a denial-of-service attacker that has compromised Alice's state could
+prevent Bob from receiving Alice's PCS update, meaning that Bob continues to send
+messages accessible under Alice's compromised state even after Alice has updated.
+To prevent this, the application <span class="bcp14">SHOULD</span> specify minimal update frequency and Send
+Group owners <span class="bcp14">SHOULD</span> remove members from which no update has been observed for an
+excessive period.<a href="#section-7-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="iana-considerations">
+<section id="section-8">
+      <h2 id="name-iana-considerations">
+<a href="#section-8" class="section-number selfRef">8. </a><a href="#name-iana-considerations" class="section-name selfRef">IANA Considerations</a>
+      </h2>
+<p id="section-8-1">This document has no IANA actions.<a href="#section-8-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="references">
+<section id="section-9">
+      <h2 id="name-references">
+<a href="#section-9" class="section-number selfRef">9. </a><a href="#name-references" class="section-name selfRef">References</a>
+      </h2>
+<p id="section-9-1">CAPBR: # Brewer, E., "Towards robust distributed systems (abstract)", ACM,
+ Proceedings of the nineteenth annual ACM symposium on Principles of distributed
+ computing, DOI 10.1145/343477.343502, July 2000,
+ <a href="https://doi.org/10.1145/343477.343502">https://doi.org/10.1145/343477.343502</a>.<a href="#section-9-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="sec-normative-references">
+<section id="section-10">
+      <h2 id="name-normative-references">
+<a href="#section-10" class="section-number selfRef">10. </a><a href="#name-normative-references" class="section-name selfRef">Normative References</a>
+      </h2>
+<dl class="references">
+<dt id="RFC2119">[RFC2119]</dt>
+      <dd>
+<span class="refAuthor">Bradner, S.</span>, <span class="refTitle">"Key words for use in RFCs to Indicate Requirement Levels"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 2119</span>, <span class="seriesInfo">DOI 10.17487/RFC2119</span>, <time datetime="1997-03" class="refDate">March 1997</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc2119">https://www.rfc-editor.org/rfc/rfc2119</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8174">[RFC8174]</dt>
+      <dd>
+<span class="refAuthor">Leiba, B.</span>, <span class="refTitle">"Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 8174</span>, <span class="seriesInfo">DOI 10.17487/RFC8174</span>, <time datetime="2017-05" class="refDate">May 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc8174">https://www.rfc-editor.org/rfc/rfc8174</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9420">[RFC9420]</dt>
+    <dd>
+<span class="refAuthor">Barnes, R.</span>, <span class="refAuthor">Beurdouche, B.</span>, <span class="refAuthor">Robert, R.</span>, <span class="refAuthor">Millican, J.</span>, <span class="refAuthor">Omara, E.</span>, and <span class="refAuthor">K. Cohn-Gordon</span>, <span class="refTitle">"The Messaging Layer Security (MLS) Protocol"</span>, <span class="seriesInfo">RFC 9420</span>, <span class="seriesInfo">DOI 10.17487/RFC9420</span>, <time datetime="2023-07" class="refDate">July 2023</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc9420">https://www.rfc-editor.org/rfc/rfc9420</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</div>
+<div id="acknowledgments">
+<section id="appendix-A">
+      <h2 id="name-acknowledgments">
+<a href="#name-acknowledgments" class="section-name selfRef">Acknowledgments</a>
+      </h2>
+<p id="appendix-A-1">TODO acknowledge.<a href="#appendix-A-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="authors-addresses">
+<section id="appendix-B">
+      <h2 id="name-authors-addresses">
+<a href="#name-authors-addresses" class="section-name selfRef">Authors' Addresses</a>
+      </h2>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Mark Xue</span></div>
+<div dir="auto" class="left"><span class="org">Germ Network, Inc.</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:mark@germ.network" class="email">mark@germ.network</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Joseph W. Lukefahr</span></div>
+<div dir="auto" class="left"><span class="org">US Naval Postgraduate School</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:joseph.lukefahr@nps.edu" class="email">joseph.lukefahr@nps.edu</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Britta Hale</span></div>
+<div dir="auto" class="left"><span class="org">US Naval Postgraduate School</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:britta.hale@nps.edu" class="email">britta.hale@nps.edu</a>
+</div>
+</address>
+</section>
+</div>
+<script>const toc = document.getElementById("toc");
+toc.querySelector("h2").addEventListener("click", e => {
+  toc.classList.toggle("active");
+});
+toc.querySelector("nav").addEventListener("click", e => {
+  toc.classList.remove("active");
+});
+</script>
+</body>
+</html>
