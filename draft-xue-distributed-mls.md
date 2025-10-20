@@ -45,7 +45,7 @@ informative:
 
 The Messaging Layer Security (MLS) protocol enables a group of participants to
 negotiate a common cryptographic state for messaging, providing Forward
-Secrecy (FS) and Post-Compromise Security (PCS). Still, there are some use cases
+Secrecy (FS) and Post-Compromise Security (PCS). There are some use cases
 where message ordering challenges may make it difficult for a group of
 participants to agree on a common state or use cases where reaching eventual
 consistency is impractical for the application. This document describes
@@ -79,11 +79,13 @@ Send Group: An MLS session where one designated sender (the group 'owner') autho
 all messages and other members use the group only to receive from the designated
 sender.
 
-DGroup: the set of communication participants, i.e., the superset of all associated
-Send Groups.
+DMLS Session: A session between a set of communication participants, where each
+participant can broadcast messages by operating their Send Group.
 
-DMembers: Members of the DGroup participating in the DMLS session, each as the
-owner of a Send Group.
+DGroup: the set of communication participants of a DMLS Session.
+
+DMembers: Members of the DGroup participating in the DMLS session.
+
 
 ## Protocol Overview
 
