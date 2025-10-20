@@ -83,7 +83,7 @@ Table of Contents
      4.1.  Send Group Operation
        4.1.1.  Send Group Mutation
        4.1.2.  Leaf Node Update
-     4.2.  Group Operations
+     4.2.  DMLS Session Operations
        4.2.1.  INIT
        4.2.2.  UPDATE
        4.2.3.  COMMIT
@@ -266,7 +266,7 @@ Table of Contents
    her own Send Group does not correspond to intermediate node updates
    for Alice's path in Bob's Send Group.  Only the leaf node is updated.
 
-4.2.  Group Operations
+4.2.  DMLS Session Operations
 
    Similar to MLS, DMLS provides a participant application programming
    interface (API) with the following functions:
