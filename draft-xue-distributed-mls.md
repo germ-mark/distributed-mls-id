@@ -200,7 +200,7 @@ tree, and consequently the Alice's update within her own Send Group does not cor
 to intermediate node updates for Alice's path in Bob's Send Group.
 Only the leaf node is updated.
 
-## Group Operations
+## DMLS Session Operations
 
 Similar to MLS, DMLS provides a participant application programming interface (API)
 with the following functions:
