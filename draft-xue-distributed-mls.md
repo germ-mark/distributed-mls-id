@@ -86,7 +86,6 @@ DGroup: the set of communication participants of a DMLS Session.
 
 DMembers: Members of the DGroup participating in the DMLS session.
 
-
 ## Protocol Overview
 
 Within a group distributed DMember participants, we can resolve state conflict
