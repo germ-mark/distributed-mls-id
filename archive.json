@@ -1,6 +1,6 @@
 {
   "magic": "E!vIA5L86J2I",
-  "timestamp": "2025-10-19T01:59:09.567531+00:00",
+  "timestamp": "2025-10-21T01:50:15.031823+00:00",
   "repo": "germ-mark/distributed-mls-id",
   "labels": [
     {
@@ -468,24 +468,60 @@
       "id": "PR_kwDONnQEW86sCorD",
       "title": "add leafNode mutation mechanics and analysis",
       "url": "https://github.com/germ-mark/distributed-mls-id/pull/15",
-      "state": "OPEN",
+      "state": "CLOSED",
       "author": "germ-mark",
       "authorAssociation": "OWNER",
       "assignees": [],
       "labels": [],
       "body": "",
       "createdAt": "2025-10-03T22:19:32Z",
-      "updatedAt": "2025-10-10T23:40:53Z",
+      "updatedAt": "2025-10-20T05:28:13Z",
       "baseRepository": "germ-mark/distributed-mls-id",
       "baseRefName": "main",
       "baseRefOid": "531312555bb4dd1a89cf1a09feeb1fffdd442354",
       "headRepository": "germ-mark/distributed-mls-id",
       "headRefName": "mark/leafNode-update",
       "headRefOid": "59049bdf705102a6dbfdc57d5c5af15ecdd0489e",
-      "closedAt": null,
+      "closedAt": "2025-10-20T05:28:12Z",
       "mergedAt": null,
       "mergedBy": null,
       "mergeCommit": null,
+      "comments": [
+        {
+          "author": "germ-mark",
+          "authorAssociation": "OWNER",
+          "body": "replacing with PR 16",
+          "createdAt": "2025-10-20T05:28:12Z",
+          "updatedAt": "2025-10-20T05:28:12Z"
+        }
+      ],
+      "reviews": []
+    },
+    {
+      "number": 16,
+      "id": "PR_kwDONnQEW86uj5bX",
+      "title": "revised leaf node updates",
+      "url": "https://github.com/germ-mark/distributed-mls-id/pull/16",
+      "state": "MERGED",
+      "author": "germ-mark",
+      "authorAssociation": "OWNER",
+      "assignees": [],
+      "labels": [],
+      "body": "",
+      "createdAt": "2025-10-20T05:26:10Z",
+      "updatedAt": "2025-10-20T05:28:25Z",
+      "baseRepository": "germ-mark/distributed-mls-id",
+      "baseRefName": "main",
+      "baseRefOid": "066c7920a2eb53654e4b78cb8bc0b49200d568bb",
+      "headRepository": "germ-mark/distributed-mls-id",
+      "headRefName": "mark/leafNode-update-rebase",
+      "headRefOid": "8dcd1d3f81103cc45c795947bf65560e8d88ff9c",
+      "closedAt": "2025-10-20T05:28:25Z",
+      "mergedAt": "2025-10-20T05:28:25Z",
+      "mergedBy": "germ-mark",
+      "mergeCommit": {
+        "oid": "9ff319d8384c8e8caa246ecd6a2be590483aebc0"
+      },
       "comments": [],
       "reviews": []
     }
