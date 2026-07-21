@@ -173,6 +173,7 @@ follows:
 If the latest DMLS Update Alice received from Bob in his Send Group is a Commit
 starting epoch k, and was not already incorporated into Alice's Send Group,
 Alice can author a Commit that
+
 *  imports a PSK from Bob's Send Group, epoch k with the following parameters
    *  psk_id: k || (Bob's Send Group's groupID)
       where k is a fixed width 8-byte encoding of the epoch in network byte order
