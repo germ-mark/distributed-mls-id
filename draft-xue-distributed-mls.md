@@ -209,6 +209,7 @@ with the following functions:
 ### INIT
 
 An application constructs a DMLS Session by defining
+
 * the DGroup
 * a scheme for assigning a Send Group identifier for each DMember
 * allowed cipher suites, and an export key length.
@@ -223,6 +224,7 @@ within the DGroup.)
 The DMLS application SHOULD recommend a policy for issuing DMLS Updates.
 
 Each DMember creates their Send Group by constructing a MLS group
+
 *  with the assigned Send Group identifier
 *  adding all other Dembers
 *  distributing the resulting welcome message
