@@ -286,6 +286,7 @@ The injection of PSK's across groups introduces an additional desirable Commit o
 consideration, although injection order is within the control of the Send Group owner.
 The format of the PSK ID helps DMembers order the application of Commits across Send
 Groups to succesfully import PSK's:
+
    * Alice issues a DMLS Update in the Commit starting epoch k of her Send Group.
    * Bob receives Alice's kth DMLS Update, and incorporates it in the j_th Commit of his
      Send Group
