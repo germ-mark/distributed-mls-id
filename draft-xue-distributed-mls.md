@@ -151,6 +151,7 @@ of the other leaf nodes is not filled in. Thus DMLS comes with functional trade-
 ## Send Group Operation
 
 A DMLS Send Group operates in the following way:
+
   * The creator of the group, occupying leaf index 0, is the designated owner of the Send
     Group
   * Other members only accept messages from the owner
